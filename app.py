@@ -348,9 +348,10 @@ class LogSentinelApp(tk.Tk):
         # Default to the SOC dashboard.
         self.notebook.select(3)
 
-        # Initial fetch, only when trial/licence allows scanning.
+        # Open quickly; heavier Windows log collection starts when the user
+        # clicks Scan Now.
         if self._license_status.can_run:
-            self.after(800, self.refresh)
+            self.after(250, self._render_dashboard)
 
     def _startup_gate(self):
         self._license_status = licensing.status()
@@ -6803,12 +6804,14 @@ class LogSentinelApp(tk.Tk):
         elif kind == "system_info":
             self.system_info = payload
             self._render_host_info()
+            self._render_dashboard()
         elif kind == "processes":
             self.processes = payload
             self._render_processes()
         elif kind == "network":
             self.connections = payload
             self._render_network()
+            self._render_dashboard()
         elif kind == "services":
             self.services = payload
             self._render_services()
@@ -6833,6 +6836,7 @@ class LogSentinelApp(tk.Tk):
         elif kind == "events":
             self.events = payload
             self._refresh_events_table()
+            self._render_dashboard()
         elif kind == "done":
             # Register custom + FIM + honeypot explanations once
             from src import custom_rules, fim, honeypots
@@ -7341,7 +7345,28 @@ class LogSentinelApp(tk.Tk):
                 f"User      : {si.user or '-'}",
             ]))
         else:
-            self.host_info_label.config(text="Run a scan to collect system information.")
+            mem = sysmon.get_memory()
+            disks = sysmon.get_disks()
+            primary_disk = next((d for d in disks if d.drive.upper().startswith("C:")),
+                                disks[0] if disks else None)
+            battery = sysmon.get_battery()
+            battery_text = (
+                f"{battery.percent}% {'plugged in' if battery.plugged_in else 'on battery'}"
+                if battery.has_battery else "Desktop / no battery"
+            )
+            disk_text = (
+                f"{primary_disk.free_gb:.0f} / {primary_disk.total_gb:.0f} GB free"
+                if primary_disk else "Not detected yet"
+            )
+            self.host_info_label.config(text="\n".join([
+                f"Host Name : {socket.gethostname()}",
+                f"OS        : {platform.system()} {platform.release()}",
+                f"CPU       : {sysmon.get_cpu_count()} logical processor(s)",
+                f"RAM       : {mem.available_gb:.1f} / {mem.total_gb:.1f} GB free",
+                f"Disk      : {disk_text}",
+                f"Battery   : {battery_text}",
+                "Scan      : Click Scan Now for full buyer-check details",
+            ]))
 
         if hasattr(self, "dashboard_network_label"):
             external = [c for c in self.connections if getattr(c, "is_external", False)]
@@ -7361,7 +7386,16 @@ class LogSentinelApp(tk.Tk):
                     f"External   : {len(external)} connection(s)",
                 ]))
             else:
-                self.dashboard_network_label.config(text="No external connections collected yet.")
+                try:
+                    local_ip = socket.gethostbyname(socket.gethostname())
+                except OSError:
+                    local_ip = "Not detected"
+                self.dashboard_network_label.config(text="\n".join([
+                    f"Local IP   : {local_ip}",
+                    "External   : Waiting for scan",
+                    "GeoIP      : Available after network collection",
+                    "Privacy    : Camera/browser checks show in Findings",
+                ]))
 
         for w in self.dashboard_timeline_frame.winfo_children():
             w.destroy()
@@ -7382,12 +7416,29 @@ class LogSentinelApp(tk.Tk):
 
         for w in self.dashboard_health_frame.winfo_children():
             w.destroy()
+        mem = sysmon.get_memory()
+        disks = sysmon.get_disks()
+        primary_disk = next((d for d in disks if d.drive.upper().startswith("C:")),
+                            disks[0] if disks else None)
+        battery = sysmon.get_battery()
+        memory_state = f"{mem.used_pct:.0f}% used" if mem.total_gb else "Checking"
+        memory_color = "#ff4757" if mem.used_pct >= 90 else "#ff9f1a" if mem.used_pct >= 75 else "#5cc96b"
+        if primary_disk:
+            disk_state = f"{primary_disk.used_pct:.0f}% used"
+            disk_color = "#ff4757" if primary_disk.used_pct >= 92 else "#ff9f1a" if primary_disk.used_pct >= 80 else "#5cc96b"
+        else:
+            disk_state, disk_color = "Checking", THEME["fg_dim"]
+        battery_state = (
+            f"{battery.percent}%"
+            if battery.has_battery else "Desktop"
+        )
         indicators = [
-            ("Startup Impact", "Review", "#ff9f1a" if counts.get("Low", 0) else "#5cc96b"),
-            ("Disk Space", "Healthy" if self.system_info else "Unknown", "#5cc96b" if self.system_info else THEME["fg_dim"]),
-            ("Memory Usage", "Healthy" if self.system_info else "Unknown", "#5cc96b" if self.system_info else THEME["fg_dim"]),
-            ("Windows Updates", "Review", "#ff9f1a"),
-            ("Antivirus Status", "Protected", "#5cc96b"),
+            ("Startup Impact", "Scan needed" if not self.autoruns else "Review", "#ff9f1a" if self.autoruns else "#3aa0ff"),
+            ("Disk Space", disk_state, disk_color),
+            ("Memory Usage", memory_state, memory_color),
+            ("Battery", battery_state, "#5cc96b" if not battery.has_battery or battery.percent >= 40 else "#ff9f1a"),
+            ("Windows Updates", "Scan needed", "#3aa0ff"),
+            ("Antivirus Status", "Scan needed", "#3aa0ff"),
         ]
         for label, state, color in indicators:
             row = tk.Frame(self.dashboard_health_frame, bg=THEME["bg_card"])
