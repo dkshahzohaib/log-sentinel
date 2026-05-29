@@ -3247,6 +3247,341 @@ class LogSentinelApp(tk.Tk):
         messagebox.showinfo(finding.title, text)
 
     # ── Trends tab ────────────────────────────────
+    def _build_health_tab(self):
+        f = ttk.Frame(self.notebook, style="TFrame")
+        self.notebook.add(f, text="  Health Check  ")
+        f.grid_rowconfigure(3, weight=1)
+        f.grid_columnconfigure(0, weight=1)
+
+        hero = tk.Frame(f, bg=THEME["bg"], padx=18, pady=14)
+        hero.grid(row=0, column=0, sticky="ew")
+        hero.grid_columnconfigure(1, weight=1)
+
+        score_card = tk.Frame(hero, bg=THEME["bg_card"], padx=16, pady=14,
+                              highlightthickness=1,
+                              highlightbackground=THEME["border"])
+        score_card.grid(row=0, column=0, sticky="nsew", padx=(0, 12))
+        self.score_canvas = tk.Canvas(score_card, width=150, height=150,
+                                      bg=THEME["bg_card"], highlightthickness=0)
+        self.score_canvas.pack()
+        self.score_number_lbl = tk.Label(score_card, text="0",
+                                         bg=THEME["bg_card"], fg="#888",
+                                         font=("Segoe UI", 26, "bold"))
+        self.score_number_lbl.place(x=0, y=52, width=182)
+        self.score_grade_lbl = tk.Label(score_card, text="-",
+                                        bg=THEME["bg_card"], fg=THEME["fg"],
+                                        font=("Segoe UI", 10, "bold"))
+        self.score_grade_lbl.place(x=0, y=92, width=182)
+
+        verdict = tk.Frame(hero, bg=THEME["bg_card"], padx=20, pady=16,
+                           highlightthickness=1,
+                           highlightbackground=THEME["border"])
+        verdict.grid(row=0, column=1, sticky="nsew")
+        verdict.grid_columnconfigure(0, weight=1)
+        tk.Label(verdict, text="PC HEALTH", bg=THEME["bg_card"],
+                 fg=THEME["fg_dim"], font=("Segoe UI", 9, "bold")
+                 ).grid(row=0, column=0, sticky="w")
+        self.health_verdict_lbl = tk.Label(
+            verdict, text="Run a scan to see your health score.",
+            bg=THEME["bg_card"], fg=THEME["fg"], font=("Segoe UI", 18, "bold"),
+            anchor="w", justify="left",
+        )
+        self.health_verdict_lbl.grid(row=1, column=0, sticky="ew", pady=(8, 4))
+        self.health_detail_lbl = tk.Label(
+            verdict, text="", bg=THEME["bg_card"], fg=THEME["fg_dim"],
+            font=("Segoe UI", 10), anchor="w", justify="left",
+        )
+        self.health_detail_lbl.grid(row=2, column=0, sticky="ew")
+        self.health_delta_lbl = tk.Label(
+            verdict, text="", bg=THEME["bg_card"], fg=THEME["accent"],
+            font=("Segoe UI", 9, "bold"), anchor="w", justify="left",
+        )
+        self.health_delta_lbl.grid(row=3, column=0, sticky="ew", pady=(8, 0))
+        btns = tk.Frame(verdict, bg=THEME["bg_card"])
+        btns.grid(row=4, column=0, sticky="w", pady=(12, 0))
+        ttk.Button(btns, text="Scan", style="Accent.TButton",
+                   command=self.refresh).pack(side="left", padx=(0, 8))
+        ttk.Button(btns, text="Quick Win",
+                   command=self.run_quick_win).pack(side="left", padx=(0, 8))
+        ttk.Button(btns, text="Export",
+                   command=self.export_html).pack(side="left", padx=(0, 8))
+        ttk.Button(btns, text="Demo",
+                   command=self.start_guided_demo).pack(side="left")
+        verdict.bind("<Configure>", self._resize_health_labels)
+
+        cats = tk.Frame(f, bg=THEME["bg"], padx=18)
+        cats.grid(row=1, column=0, sticky="ew", pady=(0, 8))
+        self.user_cat_labels = {}
+        self.user_cat_buttons = {}
+        for i in range(4):
+            cats.grid_columnconfigure(i, weight=1, uniform="cat")
+        for idx, cat in enumerate(USER_CATEGORIES):
+            color = USER_CATEGORY_COLORS[cat]
+            tile = tk.Frame(cats, bg=THEME["bg_card"], padx=14, pady=12,
+                            highlightthickness=2,
+                            highlightbackground=color, cursor="hand2")
+            tile.grid(row=0, column=idx, sticky="ew", padx=4)
+            tk.Label(tile, text=cat, bg=THEME["bg_card"], fg=color,
+                     font=("Segoe UI", 10, "bold")).pack(anchor="w")
+            count = tk.Label(tile, text="0", bg=THEME["bg_card"],
+                             fg=THEME["fg"], font=("Segoe UI", 18, "bold"))
+            count.pack(anchor="w")
+            self.user_cat_labels[cat] = count
+            self.user_cat_buttons[cat] = tile
+            tile.bind("<Button-1>",
+                      lambda _e, c=cat: self._set_card_filter(category=c))
+
+        filters = tk.Frame(f, bg=THEME["bg"], padx=18)
+        filters.grid(row=2, column=0, sticky="ew", pady=(0, 8))
+        filters.grid_columnconfigure(5, weight=1)
+        self._sev_filter = tk.StringVar(value="All")
+        self._cat_filter = tk.StringVar(value="All")
+        self._card_search = tk.StringVar()
+        self._card_search.trace_add("write", lambda *_a: self._render_action_cards())
+        tk.Label(filters, text="Recommended actions", bg=THEME["bg"],
+                 fg=THEME["accent"], font=("Segoe UI", 11, "bold")
+                 ).grid(row=0, column=0, sticky="w", padx=(0, 12))
+        ttk.Combobox(filters, textvariable=self._sev_filter, width=12,
+                     values=["All", "Critical", "High", "Medium", "Low", "Info"],
+                     state="readonly").grid(row=0, column=1, padx=(0, 8))
+        ttk.Combobox(filters, textvariable=self._cat_filter, width=14,
+                     values=["All"] + USER_CATEGORIES,
+                     state="readonly").grid(row=0, column=2, padx=(0, 8))
+        self._sev_filter.trace_add("write", lambda *_a: self._render_action_cards())
+        self._cat_filter.trace_add("write", lambda *_a: self._render_action_cards())
+        ttk.Entry(filters, textvariable=self._card_search, width=32
+                  ).grid(row=0, column=3, sticky="w", padx=(0, 8))
+        ttk.Button(filters, text="Clear",
+                   command=lambda: self._set_card_filter(reset=True)
+                   ).grid(row=0, column=4, padx=(0, 10))
+        self.health_filter_lbl = tk.Label(filters, text="", bg=THEME["bg"],
+                                          fg=THEME["fg_dim"],
+                                          font=("Segoe UI", 9))
+        self.health_filter_lbl.grid(row=0, column=5, sticky="w")
+
+        main = tk.PanedWindow(f, orient="horizontal", sashwidth=6,
+                              bg=THEME["bg"], bd=0)
+        main.grid(row=3, column=0, sticky="nsew", padx=18, pady=(0, 18))
+        left = tk.Frame(main, bg=THEME["bg_card"])
+        right = tk.Frame(main, bg=THEME["bg_card"], padx=14, pady=12)
+        main.add(left, minsize=520)
+        main.add(right, minsize=360)
+
+        cols = ("severity", "category", "title")
+        self.health_actions_tree = ttk.Treeview(
+            left, columns=cols, show="headings", selectmode="browse",
+        )
+        for col, width in [("severity", 90), ("category", 125), ("title", 520)]:
+            self.health_actions_tree.heading(col, text=col.title())
+            self.health_actions_tree.column(col, width=width, anchor="w")
+        ysb = ttk.Scrollbar(left, orient="vertical",
+                            command=self.health_actions_tree.yview)
+        self.health_actions_tree.configure(yscrollcommand=ysb.set)
+        ysb.pack(side="right", fill="y")
+        self.health_actions_tree.pack(side="left", fill="both", expand=True)
+        self.health_actions_tree.bind("<<TreeviewSelect>>",
+                                      self._on_health_action_select)
+
+        tk.Label(right, text="Action detail", bg=THEME["bg_card"],
+                 fg=THEME["fg"], font=("Segoe UI", 13, "bold")
+                 ).pack(anchor="w")
+        self.health_detail_text = tk.Text(
+            right, height=16, wrap="word", bg=THEME["bg_card"],
+            fg=THEME["fg"], insertbackground=THEME["fg"],
+            relief="flat", padx=0, pady=10, font=("Segoe UI", 10),
+        )
+        self.health_detail_text.pack(fill="both", expand=True)
+        self.health_detail_text.config(state="disabled")
+        action_bar = tk.Frame(right, bg=THEME["bg_card"])
+        action_bar.pack(fill="x", pady=(10, 0))
+        ttk.Button(action_bar, text="Done", style="Accent.TButton",
+                   command=self._health_mark_selected_done).pack(side="left", padx=(0, 6))
+        ttk.Button(action_bar, text="Snooze 7d",
+                   command=self._health_snooze_selected).pack(side="left", padx=(0, 6))
+        ttk.Button(action_bar, text="Ignore",
+                   command=self._health_ignore_selected).pack(side="left", padx=(0, 6))
+        ttk.Button(action_bar, text="Details",
+                   command=self._health_details_selected).pack(side="left")
+
+        self._health_visible_findings = []
+        self._draw_score_gauge(0, "-", "#888")
+
+    def _resize_health_labels(self, event):
+        wrap = max(260, event.width - 40)
+        for attr in ("health_verdict_lbl", "health_detail_lbl", "health_delta_lbl"):
+            label = getattr(self, attr, None)
+            if label is not None:
+                try:
+                    label.config(wraplength=wrap)
+                except tk.TclError:
+                    pass
+
+    def _selected_health_finding(self):
+        if not hasattr(self, "health_actions_tree"):
+            return None
+        sel = self.health_actions_tree.selection()
+        if not sel:
+            return None
+        try:
+            idx = int(self.health_actions_tree.item(sel[0], "tags")[0])
+            return self._health_visible_findings[idx]
+        except Exception:
+            return None
+
+    def _on_health_action_select(self, _event=None):
+        self._write_health_detail(self._selected_health_finding())
+
+    def _write_health_detail(self, finding):
+        if not hasattr(self, "health_detail_text"):
+            return
+        self.health_detail_text.config(state="normal")
+        self.health_detail_text.delete("1.0", "end")
+        if not finding:
+            text = "Select a finding to see what happened and what to do next."
+        else:
+            pe = explain(finding.rule)
+            text = (
+                f"{finding.title}\n\n"
+                f"Severity : {finding.severity}\n"
+                f"Category : {pe.user_category}\n"
+                f"Rule     : {finding.rule}\n\n"
+                f"What it means\n{pe.problem}\n\n"
+                f"Why it matters\n{pe.why_matters}\n\n"
+                f"What to do\n{pe.what_to_do}\n\n"
+                f"Technical detail\n{finding.description}"
+            )
+        self.health_detail_text.insert("1.0", text)
+        self.health_detail_text.config(state="disabled")
+
+    def _health_mark_selected_done(self):
+        finding = self._selected_health_finding()
+        if finding:
+            self._mark_resolved(finding)
+
+    def _health_snooze_selected(self):
+        finding = self._selected_health_finding()
+        if finding:
+            self._snooze(finding, 7)
+
+    def _health_ignore_selected(self):
+        finding = self._selected_health_finding()
+        if finding:
+            self._ignore(finding)
+
+    def _health_details_selected(self):
+        finding = self._selected_health_finding()
+        if finding:
+            self._show_finding_details(finding)
+
+    def _set_card_filter(self, severity: str | None = None,
+                         category: str | None = None, reset: bool = False):
+        if reset:
+            self._sev_filter.set("All")
+            self._cat_filter.set("All")
+            self._card_search.set("")
+        else:
+            if severity is not None:
+                self._sev_filter.set(severity)
+            if category is not None:
+                self._cat_filter.set("All" if self._cat_filter.get() == category else category)
+        self._render_action_cards()
+
+    def _render_health(self):
+        active = preferences.filter_active(self.findings)
+        health = calc_health(active)
+        self._draw_score_gauge(health.score, health.grade, health.color)
+        self.health_verdict_lbl.config(text=health.verdict, fg=health.color)
+        self.health_detail_lbl.config(text=health.detail)
+        try:
+            diff = scan_history.diff_against_last(active)
+            if diff.get("is_first_scan"):
+                self.health_delta_lbl.config(
+                    text="First scan - changes will appear after the next scan.",
+                    fg=THEME["fg_dim"],
+                )
+            else:
+                change = health.score - diff.get("last_score", 0)
+                self.health_delta_lbl.config(
+                    text=f"{change:+d} points vs last scan",
+                    fg="#4ecdc4" if change >= 0 else "#ff7f50",
+                )
+        except Exception:
+            self.health_delta_lbl.config(text="", fg=THEME["fg_dim"])
+
+        cat_counts = {c: 0 for c in USER_CATEGORIES}
+        for finding in active:
+            cat = explain(finding.rule).user_category
+            cat_counts[cat] = cat_counts.get(cat, 0) + 1
+        for cat, label in self.user_cat_labels.items():
+            label.config(text=str(cat_counts.get(cat, 0)))
+
+        try:
+            scan_history.save_scan(
+                health, active,
+                len(self.events), len(self.processes), len(self.connections),
+            )
+        except Exception:
+            pass
+        self._render_action_cards()
+        try:
+            self._render_trends_chart()
+        except Exception:
+            pass
+
+    def _render_action_cards(self):
+        if not hasattr(self, "health_actions_tree"):
+            return
+        active = preferences.filter_active(self.findings)
+        hidden_low = preferences.low_priority_hidden_count(self.findings)
+        sev_f = self._sev_filter.get()
+        cat_f = self._cat_filter.get()
+        search = self._card_search.get().lower().strip()
+
+        def keep(finding):
+            pe = explain(finding.rule)
+            if sev_f != "All" and finding.severity != sev_f:
+                return False
+            if cat_f != "All" and pe.user_category != cat_f:
+                return False
+            if search:
+                blob = " ".join([
+                    finding.title, finding.description, finding.rule,
+                    pe.problem, pe.why_matters, pe.what_to_do,
+                ]).lower()
+                if search not in blob:
+                    return False
+            return True
+
+        def sort_key(finding):
+            pinned = 1 if preferences.is_pinned(finding) else 0
+            ts = finding.timestamp.isoformat() if getattr(finding, "timestamp", None) else ""
+            return (pinned, SEVERITY_ORDER.get(finding.severity, 0), ts)
+
+        visible = [f for f in sorted(active, key=sort_key, reverse=True) if keep(f)]
+        self._health_visible_findings = visible
+        self.health_actions_tree.delete(*self.health_actions_tree.get_children())
+        for idx, finding in enumerate(visible):
+            pe = explain(finding.rule)
+            self.health_actions_tree.insert(
+                "", "end", tags=(str(idx),),
+                values=(finding.severity, pe.user_category, finding.title),
+            )
+        status = (
+            f"{len(visible)} of {len(active)} active issues"
+            if (sev_f != "All" or cat_f != "All" or search)
+            else f"{len(active)} active issue{'s' if len(active) != 1 else ''}"
+        )
+        if hidden_low:
+            status += f" ({hidden_low} hidden by settings)"
+        self.health_filter_lbl.config(text=status)
+        if visible:
+            first = self.health_actions_tree.get_children()[0]
+            self.health_actions_tree.selection_set(first)
+            self.health_actions_tree.focus(first)
+            self._write_health_detail(visible[0])
+        else:
+            self._write_health_detail(None)
+
     def _build_trends_tab(self):
         f = ttk.Frame(self.notebook, style="TFrame")
         self.notebook.add(f, text="  📈  Trends  ")
@@ -7445,7 +7780,7 @@ class LogSentinelApp(tk.Tk):
                     f"IP Address : {conn.remote_addr}",
                     f"Country    : {geo}",
                     f"Port       : {conn.remote_port}",
-                    f"Process    : {conn.process_name or '-'}",
+                    f"Process    : {getattr(conn, 'process_name', None) or getattr(conn, 'process', '') or '-'}",
                     f"External   : {len(external)} connection(s)",
                 ]))
             else:
