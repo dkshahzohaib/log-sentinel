@@ -345,8 +345,8 @@ class LogSentinelApp(tk.Tk):
         # Show licensing first if needed, otherwise show the first-run welcome.
         self.after(300, self._startup_gate)
 
-        # Default to the Health Check tab
-        self.notebook.select(0)
+        # Default to the SOC dashboard.
+        self.notebook.select(3)
 
         # Initial fetch, only when trial/licence allows scanning.
         if self._license_status.can_run:
@@ -1407,6 +1407,7 @@ class LogSentinelApp(tk.Tk):
     # Tab index → (section, icon, label, sublabel)
     SIDEBAR_LAYOUT = [
         ("Overview", [
+            (3,  "📊", "Dashboard",     "Security overview"),
             (0, "🏥", "Health Check",  "Score + fixes"),
             (1, "📈", "Trends",        "History over time"),
             (2, "⏱",  "Timeline",       "Event chronology"),
@@ -1417,7 +1418,6 @@ class LogSentinelApp(tk.Tk):
         ]),
         ("Monitor", [
             (11, "💓", "System Monitor", "CPU · RAM · Disk"),
-            (3,  "📊", "Dashboard",     "All counts"),
         ]),
         ("Investigate", [
             (5,  "🔎", "Findings",      "All detections"),
@@ -7058,6 +7058,346 @@ class LogSentinelApp(tk.Tk):
             tk.Label(row, text=f.title, bg=THEME["bg_card"], fg=THEME["fg"],
                      font=("Segoe UI", 9), anchor="w").pack(
                 side="left", fill="x", expand=True, padx=4)
+
+    def _dashboard_panel(self, parent, title: str, row: int | None = None,
+                         col: int | None = None, packed: bool = False):
+        card = tk.Frame(
+            parent, bg=THEME["bg_card"], padx=14, pady=12,
+            highlightthickness=1, highlightbackground="#24415f",
+        )
+        if packed:
+            card.pack(fill="x", pady=(0, 10))
+        else:
+            card.grid(row=row, column=col, sticky="nsew", padx=6, pady=6)
+        tk.Label(card, text=title, bg=THEME["bg_card"], fg=THEME["fg"],
+                 font=("Segoe UI", 10, "bold")).pack(anchor="w")
+        return card
+
+    def _dashboard_metric_card(self, parent, col: int, title: str, key: str,
+                               value: str, detail: str, color: str):
+        card = tk.Frame(
+            parent, bg=THEME["bg_card"], padx=18, pady=14,
+            highlightthickness=1, highlightbackground="#24415f",
+        )
+        card.grid(row=0, column=col, sticky="nsew", padx=6)
+        tk.Label(card, text=title, bg=THEME["bg_card"], fg=THEME["fg_dim"],
+                 font=("Segoe UI", 9, "bold")).pack(anchor="w")
+        value_lbl = tk.Label(card, text=value, bg=THEME["bg_card"], fg=THEME["fg"],
+                             font=("Segoe UI Semibold", 22))
+        value_lbl.pack(anchor="w", pady=(6, 0))
+        detail_lbl = tk.Label(card, text=detail, bg=THEME["bg_card"], fg=color,
+                              font=("Segoe UI", 9))
+        detail_lbl.pack(anchor="w", pady=(2, 0))
+        self.dashboard_widgets[key] = (value_lbl, detail_lbl)
+
+    def _build_dashboard_tab(self):
+        f = ttk.Frame(self.notebook, style="TFrame")
+        self.notebook.add(f, text="  Dashboard  ")
+        self.dashboard_widgets = {}
+
+        canvas = tk.Canvas(f, bg=THEME["bg"], highlightthickness=0)
+        sb = ttk.Scrollbar(f, orient="vertical", command=canvas.yview)
+        canvas.configure(yscrollcommand=sb.set)
+        sb.pack(side="right", fill="y")
+        canvas.pack(side="left", fill="both", expand=True)
+
+        root = tk.Frame(canvas, bg=THEME["bg"], padx=18, pady=16)
+        win_id = canvas.create_window((0, 0), window=root, anchor="nw")
+        root.bind("<Configure>", lambda _e: canvas.configure(scrollregion=canvas.bbox("all")))
+        canvas.bind("<Configure>", lambda e: canvas.itemconfig(win_id, width=e.width))
+
+        header = tk.Frame(root, bg=THEME["bg"])
+        header.pack(fill="x", pady=(0, 14))
+        title_col = tk.Frame(header, bg=THEME["bg"])
+        title_col.pack(side="left", fill="x", expand=True)
+        tk.Label(title_col, text="Dashboard", bg=THEME["bg"], fg=THEME["fg"],
+                 font=("Segoe UI Semibold", 18)).pack(anchor="w")
+        tk.Label(title_col, text="Overview of system security, logs, and host health.",
+                 bg=THEME["bg"], fg=THEME["fg_dim"], font=("Segoe UI", 10)
+                 ).pack(anchor="w", pady=(2, 0))
+        ttk.Button(header, text="Export Report", command=self.export_html
+                   ).pack(side="right", padx=(8, 0))
+        ttk.Button(header, text="Scan Now", style="Accent.TButton",
+                   command=self.refresh).pack(side="right")
+
+        metrics = tk.Frame(root, bg=THEME["bg"])
+        metrics.pack(fill="x", pady=(0, 14))
+        for i in range(4):
+            metrics.grid_columnconfigure(i, weight=1, uniform="metric")
+        self._dashboard_metric_card(metrics, 0, "Total Findings", "total_findings", "0", "No active findings", "#3aa0ff")
+        self._dashboard_metric_card(metrics, 1, "System Health", "health_score", "0 /100", "Run a scan", "#5cc96b")
+        self._dashboard_metric_card(metrics, 2, "Logs Analyzed", "logs_analyzed", "0", "Windows Event Logs", "#3aa0ff")
+        self._dashboard_metric_card(metrics, 3, "Last Scan", "last_scan", "-", "Not scanned yet", "#a875ff")
+
+        main = tk.Frame(root, bg=THEME["bg"])
+        main.pack(fill="both", expand=True)
+        for i in range(4):
+            main.grid_columnconfigure(i, weight=1, uniform="dash")
+
+        severity_card = self._dashboard_panel(main, "Severity Overview", row=0, col=0)
+        self.dashboard_severity_canvas = tk.Canvas(
+            severity_card, height=230, bg=THEME["bg_card"], highlightthickness=0,
+        )
+        self.dashboard_severity_canvas.pack(fill="x")
+
+        cat_card = self._dashboard_panel(main, "Top Finding Categories", row=0, col=1)
+        self.cat_breakdown_frame = tk.Frame(cat_card, bg=THEME["bg_card"])
+        self.cat_breakdown_frame.pack(fill="both", expand=True, pady=(8, 0))
+
+        findings_card = self._dashboard_panel(main, "Recent High Severity Findings", row=0, col=2)
+        self.top_findings_frame = tk.Frame(findings_card, bg=THEME["bg_card"])
+        self.top_findings_frame.pack(fill="both", expand=True, pady=(8, 0))
+        ttk.Button(findings_card, text="View All Findings",
+                   command=lambda: self.notebook.select(5)).pack(anchor="w", pady=(8, 0))
+
+        right_col = tk.Frame(main, bg=THEME["bg"])
+        right_col.grid(row=0, column=3, rowspan=2, sticky="nsew", padx=(6, 0), pady=6)
+        system_card = self._dashboard_panel(right_col, "System Information", packed=True)
+        self.host_info_label = tk.Label(
+            system_card, text="-", bg=THEME["bg_card"], fg=THEME["fg"],
+            justify="left", font=("Consolas", 9), anchor="nw",
+        )
+        self.host_info_label.pack(fill="x", pady=(8, 0))
+
+        net_card = self._dashboard_panel(right_col, "Network / GeoIP Context", packed=True)
+        self.dashboard_network_label = tk.Label(
+            net_card, text="-", bg=THEME["bg_card"], fg=THEME["fg"],
+            justify="left", font=("Consolas", 9), anchor="nw",
+        )
+        self.dashboard_network_label.pack(fill="x", pady=(8, 0))
+
+        export_card = self._dashboard_panel(right_col, "Export Report", packed=True)
+        tk.Label(export_card, text="Generate a report for findings and system information.",
+                 bg=THEME["bg_card"], fg=THEME["fg_dim"], font=("Segoe UI", 9),
+                 wraplength=300, justify="left").pack(anchor="w", pady=(2, 10))
+        ttk.Button(export_card, text="Export HTML Report", style="Accent.TButton",
+                   command=self.export_html).pack(fill="x", pady=2)
+        ttk.Button(export_card, text="Open Reports",
+                   command=self.open_reports_window).pack(fill="x", pady=2)
+
+        timeline_card = self._dashboard_panel(main, "Timeline Activity", row=1, col=0)
+        self.dashboard_timeline_frame = tk.Frame(timeline_card, bg=THEME["bg_card"])
+        self.dashboard_timeline_frame.pack(fill="both", expand=True, pady=(8, 0))
+        ttk.Button(timeline_card, text="View Full Timeline",
+                   command=lambda: self.notebook.select(2)).pack(anchor="w", pady=(8, 0))
+
+        health_card = self._dashboard_panel(main, "System Health Indicators", row=1, col=1)
+        self.dashboard_health_frame = tk.Frame(health_card, bg=THEME["bg_card"])
+        self.dashboard_health_frame.pack(fill="both", expand=True, pady=(8, 0))
+        ttk.Button(health_card, text="View System Info",
+                   command=lambda: self.notebook.select(13)).pack(anchor="w", pady=(8, 0))
+
+        actions_card = self._dashboard_panel(main, "Quick Actions", row=1, col=2)
+        for label, command in [
+            ("View Windows Logs", lambda: self.notebook.select(6)),
+            ("Open Task Manager", remediation.open_task_manager),
+            ("Firewall & Network", lambda: self.notebook.select(12)),
+            ("Manage Autoruns", lambda: self.notebook.select(10)),
+        ]:
+            ttk.Button(actions_card, text=label, command=command).pack(fill="x", pady=3)
+        ttk.Button(actions_card, text="Panic Button (Isolate Network)",
+                   command=self.open_panic_dialog).pack(fill="x", pady=(8, 3))
+
+        coverage = self._dashboard_panel(root, "Detection Coverage", packed=True)
+        cov_row = tk.Frame(coverage, bg=THEME["bg_card"])
+        cov_row.pack(fill="x", pady=(8, 0))
+        for title, sub, color in [
+            ("Authentication", "Logons, lockouts", "#3aa0ff"),
+            ("Privilege Activity", "Admin, elevation", "#ff9f1a"),
+            ("Persistence", "Services, tasks", "#52c41a"),
+            ("Process Behavior", "Processes, paths", "#82aaff"),
+            ("Network", "Connections, GeoIP", "#3aa0ff"),
+            ("Defense Evasion", "Tampering, clearing", "#ff4757"),
+            ("Ransomware", "Honeypots, integrity", "#ff4757"),
+            ("Privacy", "Camera, browser", "#5cc96b"),
+            ("System Health", "Performance, hardware", "#5cc96b"),
+        ]:
+            item = tk.Frame(cov_row, bg=THEME["bg_card"])
+            item.pack(side="left", fill="x", expand=True, padx=4)
+            tk.Label(item, text=title, bg=THEME["bg_card"], fg=color,
+                     font=("Segoe UI", 8, "bold")).pack(anchor="w")
+            tk.Label(item, text=sub, bg=THEME["bg_card"], fg=THEME["fg_dim"],
+                     font=("Segoe UI", 7)).pack(anchor="w")
+
+    def _render_dashboard(self):
+        if not hasattr(self, "dashboard_widgets"):
+            return
+
+        active = preferences.filter_active(self.findings)
+        counts = {s: 0 for s in SEVERITY_FG}
+        for f in active:
+            counts[f.severity] = counts.get(f.severity, 0) + 1
+        health = calc_health(active)
+
+        metric = self.dashboard_widgets.get("total_findings")
+        if metric:
+            metric[0].config(text=str(len(active)))
+            metric[1].config(
+                text=f"{counts.get('Critical', 0)} Critical   {counts.get('High', 0)} High   {counts.get('Medium', 0)} Medium"
+            )
+        metric = self.dashboard_widgets.get("health_score")
+        if metric:
+            metric[0].config(text=f"{health.score} /100")
+            metric[1].config(text=health.grade + " - " + health.verdict, fg=health.color)
+        metric = self.dashboard_widgets.get("logs_analyzed")
+        if metric:
+            metric[0].config(text=f"{len(self.events):,}")
+            security_logs = sum(1 for e in self.events if e.channel == "Security")
+            metric[1].config(text=f"{security_logs:,} Security logs")
+        metric = self.dashboard_widgets.get("last_scan")
+        if metric:
+            metric[0].config(text=datetime.now().strftime("%I:%M %p").lstrip("0"))
+            metric[1].config(text=datetime.now().strftime("%Y-%m-%d"))
+
+        if hasattr(self, "dashboard_severity_canvas"):
+            c = self.dashboard_severity_canvas
+            c.delete("all")
+            total = max(1, len(active))
+            x0, y0, x1, y1 = 35, 25, 185, 175
+            start = 90
+            for sev in ["Critical", "High", "Medium", "Low", "Info"]:
+                n = counts.get(sev, 0)
+                if not n:
+                    continue
+                extent = -(n / total) * 360
+                c.create_arc(x0, y0, x1, y1, start=start, extent=extent,
+                             fill=SEVERITY_FG.get(sev, "#888"),
+                             outline=THEME["bg_card"], width=2)
+                start += extent
+            c.create_oval(72, 62, 148, 138, fill=THEME["bg_card"],
+                          outline=THEME["bg_card"])
+            c.create_text(110, 92, text=str(len(active)), fill=THEME["fg"],
+                          font=("Segoe UI", 24, "bold"))
+            c.create_text(110, 118, text="Total", fill=THEME["fg_dim"],
+                          font=("Segoe UI", 9))
+            y = 35
+            for sev in ["Critical", "High", "Medium", "Low"]:
+                c.create_oval(220, y + 4, 230, y + 14,
+                              fill=SEVERITY_FG[sev], outline="")
+                c.create_text(242, y + 9, text=f"{counts.get(sev, 0)}  {sev}",
+                              fill=THEME["fg"], anchor="w",
+                              font=("Segoe UI", 9))
+                y += 34
+
+        for w in self.cat_breakdown_frame.winfo_children():
+            w.destroy()
+        cat_counts: dict[str, int] = {}
+        for f in active:
+            cat = explain(f.rule).user_category
+            cat_counts[cat] = cat_counts.get(cat, 0) + 1
+        items = sorted(cat_counts.items(), key=lambda x: x[1], reverse=True)[:6]
+        max_count = max((n for _, n in items), default=1)
+        if not items:
+            tk.Label(self.cat_breakdown_frame, text="No findings yet.",
+                     bg=THEME["bg_card"], fg=THEME["fg_dim"],
+                     font=("Segoe UI", 10)).pack(anchor="w", pady=8)
+        for cat, n in items:
+            row = tk.Frame(self.cat_breakdown_frame, bg=THEME["bg_card"])
+            row.pack(fill="x", pady=5)
+            tk.Label(row, text=cat, bg=THEME["bg_card"], fg=THEME["fg"],
+                     width=16, anchor="w", font=("Segoe UI", 9)).pack(side="left")
+            bar_bg = tk.Frame(row, bg=THEME["bg_panel"], height=5)
+            bar_bg.pack(side="left", fill="x", expand=True, padx=8)
+            bar = tk.Frame(bar_bg, bg=USER_CATEGORY_COLORS.get(cat, THEME["accent"]), height=5)
+            bar.place(relx=0, rely=0, relwidth=max(0.08, n / max_count), relheight=1)
+            tk.Label(row, text=str(n), bg=THEME["bg_card"], fg=THEME["fg"],
+                     width=3, anchor="e", font=("Segoe UI", 9)).pack(side="left")
+
+        for w in self.top_findings_frame.winfo_children():
+            w.destroy()
+        top = [f for f in active if f.severity in ("Critical", "High", "Medium")][:5]
+        if not top:
+            tk.Label(self.top_findings_frame, text="No high severity findings.",
+                     bg=THEME["bg_card"], fg="#4ecdc4",
+                     font=("Segoe UI", 10)).pack(anchor="w", pady=8)
+        for f in top:
+            row = tk.Frame(self.top_findings_frame, bg=THEME["bg_card"])
+            row.pack(fill="x", pady=5)
+            tk.Label(row, text="●", bg=THEME["bg_card"], fg=SEVERITY_FG[f.severity],
+                     font=("Segoe UI", 12, "bold")).pack(side="left", padx=(0, 6))
+            text = tk.Frame(row, bg=THEME["bg_card"])
+            text.pack(side="left", fill="x", expand=True)
+            tk.Label(text, text=f.title[:58], bg=THEME["bg_card"], fg=THEME["fg"],
+                     anchor="w", font=("Segoe UI", 9)).pack(anchor="w", fill="x")
+            tk.Label(text, text=f"{f.severity} · {explain(f.rule).user_category}",
+                     bg=THEME["bg_card"], fg=THEME["fg_dim"],
+                     anchor="w", font=("Segoe UI", 8)).pack(anchor="w")
+
+        if self.system_info:
+            si = self.system_info
+            ram = f"{si.ram_total_gb:.1f} GB" if si.ram_total_gb else "-"
+            disk_free = "-"
+            if si.disks:
+                free = sum(float(d.get("free_gb") or 0) for d in si.disks)
+                total = sum(float(d.get("size_gb") or 0) for d in si.disks)
+                disk_free = f"{free:.0f} / {total:.0f} GB free" if total else f"{free:.0f} GB free"
+            self.host_info_label.config(text="\n".join([
+                f"Host Name : {si.hostname}",
+                f"OS        : {si.os}",
+                f"CPU       : {si.cpu[:36] or '-'}",
+                f"RAM       : {ram}",
+                f"Disk      : {disk_free}",
+                f"Last Boot : {si.boot_time or '-'}",
+                f"User      : {si.user or '-'}",
+            ]))
+        else:
+            self.host_info_label.config(text="Run a scan to collect system information.")
+
+        if hasattr(self, "dashboard_network_label"):
+            external = [c for c in self.connections if getattr(c, "is_external", False)]
+            if external:
+                conn = external[0]
+                try:
+                    from src import geoip
+                    match = geoip.lookup(conn.remote_addr)
+                    geo = f"{geoip.flag(match.country)} {match.country_name}"
+                except Exception:
+                    geo = "-"
+                self.dashboard_network_label.config(text="\n".join([
+                    f"IP Address : {conn.remote_addr}",
+                    f"Country    : {geo}",
+                    f"Port       : {conn.remote_port}",
+                    f"Process    : {conn.process_name or '-'}",
+                    f"External   : {len(external)} connection(s)",
+                ]))
+            else:
+                self.dashboard_network_label.config(text="No external connections collected yet.")
+
+        for w in self.dashboard_timeline_frame.winfo_children():
+            w.destroy()
+        recent_events = sorted(self.events, key=lambda e: e.timestamp, reverse=True)[:5]
+        for e in recent_events:
+            row = tk.Frame(self.dashboard_timeline_frame, bg=THEME["bg_card"])
+            row.pack(fill="x", pady=4)
+            tk.Label(row, text=e.timestamp.strftime("%H:%M"), bg=THEME["bg_card"],
+                     fg=THEME["fg_dim"], width=7, anchor="w",
+                     font=("Consolas", 9)).pack(side="left")
+            tk.Label(row, text=f"{EVENT_LABELS.get(e.event_id, 'Windows event')} ({e.event_id})",
+                     bg=THEME["bg_card"], fg=THEME["fg"],
+                     anchor="w", font=("Segoe UI", 9)).pack(side="left", fill="x", expand=True)
+        if not recent_events:
+            tk.Label(self.dashboard_timeline_frame, text="No logs collected yet.",
+                     bg=THEME["bg_card"], fg=THEME["fg_dim"],
+                     font=("Segoe UI", 10)).pack(anchor="w", pady=8)
+
+        for w in self.dashboard_health_frame.winfo_children():
+            w.destroy()
+        indicators = [
+            ("Startup Impact", "Review", "#ff9f1a" if counts.get("Low", 0) else "#5cc96b"),
+            ("Disk Space", "Healthy" if self.system_info else "Unknown", "#5cc96b" if self.system_info else THEME["fg_dim"]),
+            ("Memory Usage", "Healthy" if self.system_info else "Unknown", "#5cc96b" if self.system_info else THEME["fg_dim"]),
+            ("Windows Updates", "Review", "#ff9f1a"),
+            ("Antivirus Status", "Protected", "#5cc96b"),
+        ]
+        for label, state, color in indicators:
+            row = tk.Frame(self.dashboard_health_frame, bg=THEME["bg_card"])
+            row.pack(fill="x", pady=5)
+            tk.Label(row, text=label, bg=THEME["bg_card"], fg=THEME["fg"],
+                     font=("Segoe UI", 9), anchor="w").pack(side="left", fill="x", expand=True)
+            tk.Label(row, text="●", bg=THEME["bg_card"], fg=color,
+                     font=("Segoe UI", 10, "bold")).pack(side="left", padx=(0, 8))
+            tk.Label(row, text=state, bg=THEME["bg_card"], fg=THEME["fg_dim"],
+                     font=("Segoe UI", 9), width=10, anchor="w").pack(side="left")
 
     def _refresh_findings_table(self):
         for row in self.findings_tree.get_children():
