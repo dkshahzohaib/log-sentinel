@@ -286,7 +286,7 @@ class LogSentinelApp(tk.Tk):
 
         self.title(f"{version_label()} - System & Security Log Analyser")
         self.configure(bg=THEME["bg"])
-        self.minsize(1280, 800)
+        self.minsize(980, 700)
 
         # Restore window state from preferences (size, position, maximised)
         try:
@@ -295,7 +295,7 @@ class LogSentinelApp(tk.Tk):
         except Exception:
             saved_geom, saved_zoomed = "", True
 
-        self.geometry(saved_geom if saved_geom else "1500x950")
+        self.geometry(saved_geom if saved_geom else "1200x820")
         if saved_zoomed:
             try:
                 self.state("zoomed")
@@ -2387,33 +2387,34 @@ class LogSentinelApp(tk.Tk):
         self.notebook.add(f, text="  🏥  Health Check  ")
 
         # Hero strip — score gauge + headline verdict + delta vs last scan
-        hero = tk.Frame(f, bg=THEME["bg_card"], padx=32, pady=24)
+        hero = tk.Frame(f, bg=THEME["bg_card"], padx=20, pady=18)
         hero.pack(fill="x", padx=20, pady=(20, 12))
         self._hero_frame = hero
+        hero.grid_columnconfigure(1, weight=1)
 
         # Left: large gauge
         gauge_box = tk.Frame(hero, bg=THEME["bg_card"])
-        gauge_box.pack(side="left", padx=(0, 32))
+        gauge_box.grid(row=0, column=0, sticky="nw", padx=(0, 20))
         self.score_canvas = tk.Canvas(
-            gauge_box, width=240, height=240,
+            gauge_box, width=180, height=180,
             bg=THEME["bg_card"], highlightthickness=0,
         )
         self.score_canvas.pack()
         self.score_number_lbl = tk.Label(
             gauge_box, text="0", bg=THEME["bg_card"], fg="#888",
-            font=("Segoe UI", 36, "bold"),
+            font=("Segoe UI", 30, "bold"),
         )
-        self.score_number_lbl.place(x=0, y=78, width=240)
+        self.score_number_lbl.place(x=0, y=60, width=180)
         self.score_grade_lbl = tk.Label(
             gauge_box, text="-", bg=THEME["bg_card"], fg=THEME["fg"],
             font=("Segoe UI", 11, "bold"),
         )
-        self.score_grade_lbl.place(x=0, y=128, width=240)
+        self.score_grade_lbl.place(x=0, y=106, width=180)
         self._draw_score_gauge(0, "—", "#888")
 
         # Right: verdict text + delta
         text_box = tk.Frame(hero, bg=THEME["bg_card"])
-        text_box.pack(side="left", fill="both", expand=True)
+        text_box.grid(row=0, column=1, sticky="nsew")
 
         tk.Label(text_box, text="YOUR PC HEALTH",
                  bg=THEME["bg_card"], fg=THEME["fg_dim"],
@@ -2423,37 +2424,43 @@ class LogSentinelApp(tk.Tk):
         self.health_verdict_lbl = tk.Label(
             text_box, text="Run a scan to see your health score.",
             bg=THEME["bg_card"], fg=THEME["fg"],
-            font=("Segoe UI", 22, "bold"),
-            wraplength=900, justify="left", anchor="w",
+            font=("Segoe UI", 20, "bold"),
+            wraplength=520, justify="left", anchor="w",
         )
         self.health_verdict_lbl.pack(anchor="w", pady=(10, 10), fill="x")
 
         self.health_detail_lbl = tk.Label(
             text_box, text="", bg=THEME["bg_card"], fg=THEME["fg_dim"],
             font=("Segoe UI", 11),
-            wraplength=900, justify="left", anchor="w",
+            wraplength=520, justify="left", anchor="w",
         )
         self.health_detail_lbl.pack(anchor="w", fill="x")
 
         # Delta vs last scan (green/red banner)
         self.health_delta_lbl = tk.Label(
             text_box, text="", bg=THEME["bg_card"], fg=THEME["accent"],
-            font=("Segoe UI", 11, "bold"), wraplength=900,
+            font=("Segoe UI", 11, "bold"), wraplength=520,
             justify="left", anchor="w",
         )
         self.health_delta_lbl.pack(anchor="w", pady=(10, 0), fill="x")
+        self._health_wrap_labels = [
+            self.health_verdict_lbl,
+            self.health_detail_lbl,
+            self.health_delta_lbl,
+        ]
+        text_box.bind("<Configure>", self._on_health_text_resize)
 
         # Action buttons row
         btn_row = tk.Frame(text_box, bg=THEME["bg_card"])
-        btn_row.pack(anchor="w", pady=(16, 0))
-        ttk.Button(btn_row, text="🔄  Scan Again", style="Accent.TButton",
-                   command=self.refresh).pack(side="left", padx=(0, 8))
-        ttk.Button(btn_row, text="✨  Quick Win — fix safe items",
-                   command=self.run_quick_win).pack(side="left", padx=(0, 8))
-        ttk.Button(btn_row, text="📄  Export Report",
-                   command=self.export_html).pack(side="left")
-        ttk.Button(btn_row, text="Guided demo",
-                   command=self.start_guided_demo).pack(side="left", padx=(8, 0))
+        btn_row.pack(anchor="w", fill="x", pady=(16, 0))
+        ttk.Button(btn_row, text="Scan", style="Accent.TButton",
+                   command=self.refresh).grid(row=0, column=0, sticky="w", padx=(0, 8), pady=3)
+        ttk.Button(btn_row, text="Quick Win",
+                   command=self.run_quick_win).grid(row=0, column=1, sticky="w", padx=(0, 8), pady=3)
+        ttk.Button(btn_row, text="Export",
+                   command=self.export_html).grid(row=1, column=0, sticky="w", padx=(0, 8), pady=3)
+        ttk.Button(btn_row, text="Demo",
+                   command=self.start_guided_demo).grid(row=1, column=1, sticky="w", padx=(0, 8), pady=3)
 
         # Category cards row
         cats = tk.Frame(f, bg=THEME["bg"])
@@ -2461,13 +2468,16 @@ class LogSentinelApp(tk.Tk):
         self._cats_frame = cats
         self.user_cat_labels: dict[str, tk.Label] = {}
         self.user_cat_buttons: dict[str, tk.Frame] = {}
-        for cat in USER_CATEGORIES:
+        for i in range(2):
+            cats.grid_columnconfigure(i, weight=1, uniform="health_cat")
+        for idx, cat in enumerate(USER_CATEGORIES):
             color = USER_CATEGORY_COLORS[cat]
             icon = USER_CATEGORY_ICONS[cat]
             card = tk.Frame(cats, bg=THEME["bg_card"], padx=18, pady=14,
                             highlightthickness=3, highlightbackground=color,
                             cursor="hand2")
-            card.pack(side="left", expand=True, fill="x", padx=4)
+            card.grid(row=idx // 2, column=idx % 2, sticky="nsew",
+                      padx=4, pady=4)
             tk.Label(card, text=icon, bg=THEME["bg_card"], fg=color,
                      font=("Segoe UI Emoji", 22)).pack(side="left", padx=(0, 12))
             text_col = tk.Frame(card, bg=THEME["bg_card"])
@@ -2500,7 +2510,7 @@ class LogSentinelApp(tk.Tk):
         self._sev_filter = tk.StringVar(value="All")
         self._cat_filter = tk.StringVar(value="All")
         chip_box = tk.Frame(filt, bg=THEME["bg"])
-        chip_box.pack(side="right")
+        chip_box.pack(side="left", padx=(14, 0))
 
         for sev in ["All", "Critical", "High", "Medium", "Low"]:
             color = SEVERITY_FG.get(sev, THEME["fg_dim"]) if sev != "All" else THEME["accent"]
@@ -2519,7 +2529,7 @@ class LogSentinelApp(tk.Tk):
                  bg=THEME["bg"], fg=THEME["fg_dim"]).pack(side="left", padx=(0, 6))
         self._card_search = tk.StringVar()
         self._card_search.trace_add("write", lambda *a: self._render_action_cards())
-        ttk.Entry(search_row, textvariable=self._card_search, width=40).pack(
+        ttk.Entry(search_row, textvariable=self._card_search, width=28).pack(
             side="left", padx=(0, 14))
 
         self.health_filter_lbl = tk.Label(
@@ -2870,10 +2880,21 @@ class LogSentinelApp(tk.Tk):
         except tk.TclError:
             pass
 
+    def _on_health_text_resize(self, e):
+        wrap = max(260, e.width - 20)
+        for label in getattr(self, "_health_wrap_labels", []):
+            try:
+                label.config(wraplength=wrap)
+            except tk.TclError:
+                pass
+
     def _draw_score_gauge(self, score: int, grade: str, color: str):
         c = self.score_canvas
         c.delete("all")
-        cx, cy, r = 100, 100, 80
+        width = int(c.cget("width"))
+        height = int(c.cget("height"))
+        cx, cy = width // 2, height // 2
+        r = max(52, min(width, height) // 2 - 18)
         # Background ring
         c.create_oval(cx-r, cy-r, cx+r, cy+r, outline="#3d3d5c", width=14)
         # Progress arc
