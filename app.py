@@ -6914,7 +6914,8 @@ class LogSentinelApp(tk.Tk):
             f"Boot time : {si.boot_time or 'unknown'}\n"
             f"IPs       : {ips}"
         )
-        self.host_info_label.config(text=text)
+        if hasattr(self, "host_info_label"):
+            self.host_info_label.config(text=text)
         if hasattr(self, "system_summary_text"):
             if hasattr(self, "system_metric_row"):
                 for w in self.system_metric_row.winfo_children():
@@ -7012,7 +7013,7 @@ class LogSentinelApp(tk.Tk):
             lbl.config(text=str(counts.get(sev, 0)))
 
         # Update category breakdown
-        for w in self.cat_breakdown_frame.winfo_children():
+        for w in self.dashboard_cat_breakdown_frame.winfo_children():
             w.destroy()
         cat_counts: dict[str, int] = {c: 0 for c in CATEGORIES}
         for e in self.events:
@@ -7145,23 +7146,23 @@ class LogSentinelApp(tk.Tk):
         self.dashboard_severity_canvas.pack(fill="x")
 
         cat_card = self._dashboard_panel(main, "Top Finding Categories", row=0, col=1)
-        self.cat_breakdown_frame = tk.Frame(cat_card, bg=THEME["bg_card"])
-        self.cat_breakdown_frame.pack(fill="both", expand=True, pady=(8, 0))
+        self.dashboard_cat_breakdown_frame = tk.Frame(cat_card, bg=THEME["bg_card"])
+        self.dashboard_cat_breakdown_frame.pack(fill="both", expand=True, pady=(8, 0))
 
         findings_card = self._dashboard_panel(main, "Recent High Severity Findings", row=0, col=2)
-        self.top_findings_frame = tk.Frame(findings_card, bg=THEME["bg_card"])
-        self.top_findings_frame.pack(fill="both", expand=True, pady=(8, 0))
+        self.dashboard_top_findings_frame = tk.Frame(findings_card, bg=THEME["bg_card"])
+        self.dashboard_top_findings_frame.pack(fill="both", expand=True, pady=(8, 0))
         ttk.Button(findings_card, text="View All Findings",
                    command=lambda: self.notebook.select(5)).pack(anchor="w", pady=(8, 0))
 
         right_col = tk.Frame(main, bg=THEME["bg"])
         right_col.grid(row=0, column=3, rowspan=2, sticky="nsew", padx=(6, 0), pady=6)
         system_card = self._dashboard_panel(right_col, "System Information", packed=True)
-        self.host_info_label = tk.Label(
+        self.dashboard_host_info_label = tk.Label(
             system_card, text="-", bg=THEME["bg_card"], fg=THEME["fg"],
             justify="left", font=("Consolas", 9), anchor="nw",
         )
-        self.host_info_label.pack(fill="x", pady=(8, 0))
+        self.dashboard_host_info_label.pack(fill="x", pady=(8, 0))
 
         net_card = self._dashboard_panel(right_col, "Network / GeoIP Context", packed=True)
         self.dashboard_network_label = tk.Label(
@@ -7283,7 +7284,7 @@ class LogSentinelApp(tk.Tk):
                               font=("Segoe UI", 9))
                 y += 34
 
-        for w in self.cat_breakdown_frame.winfo_children():
+        for w in self.dashboard_cat_breakdown_frame.winfo_children():
             w.destroy()
         cat_counts: dict[str, int] = {}
         for f in active:
@@ -7292,11 +7293,11 @@ class LogSentinelApp(tk.Tk):
         items = sorted(cat_counts.items(), key=lambda x: x[1], reverse=True)[:6]
         max_count = max((n for _, n in items), default=1)
         if not items:
-            tk.Label(self.cat_breakdown_frame, text="No findings yet.",
+            tk.Label(self.dashboard_cat_breakdown_frame, text="No findings yet.",
                      bg=THEME["bg_card"], fg=THEME["fg_dim"],
                      font=("Segoe UI", 10)).pack(anchor="w", pady=8)
         for cat, n in items:
-            row = tk.Frame(self.cat_breakdown_frame, bg=THEME["bg_card"])
+            row = tk.Frame(self.dashboard_cat_breakdown_frame, bg=THEME["bg_card"])
             row.pack(fill="x", pady=5)
             tk.Label(row, text=cat, bg=THEME["bg_card"], fg=THEME["fg"],
                      width=16, anchor="w", font=("Segoe UI", 9)).pack(side="left")
@@ -7307,15 +7308,15 @@ class LogSentinelApp(tk.Tk):
             tk.Label(row, text=str(n), bg=THEME["bg_card"], fg=THEME["fg"],
                      width=3, anchor="e", font=("Segoe UI", 9)).pack(side="left")
 
-        for w in self.top_findings_frame.winfo_children():
+        for w in self.dashboard_top_findings_frame.winfo_children():
             w.destroy()
         top = [f for f in active if f.severity in ("Critical", "High", "Medium")][:5]
         if not top:
-            tk.Label(self.top_findings_frame, text="No high severity findings.",
+            tk.Label(self.dashboard_top_findings_frame, text="No high severity findings.",
                      bg=THEME["bg_card"], fg="#4ecdc4",
                      font=("Segoe UI", 10)).pack(anchor="w", pady=8)
         for f in top:
-            row = tk.Frame(self.top_findings_frame, bg=THEME["bg_card"])
+            row = tk.Frame(self.dashboard_top_findings_frame, bg=THEME["bg_card"])
             row.pack(fill="x", pady=5)
             tk.Label(row, text="●", bg=THEME["bg_card"], fg=SEVERITY_FG[f.severity],
                      font=("Segoe UI", 12, "bold")).pack(side="left", padx=(0, 6))
@@ -7335,7 +7336,7 @@ class LogSentinelApp(tk.Tk):
                 free = sum(float(d.get("free_gb") or 0) for d in si.disks)
                 total = sum(float(d.get("size_gb") or 0) for d in si.disks)
                 disk_free = f"{free:.0f} / {total:.0f} GB free" if total else f"{free:.0f} GB free"
-            self.host_info_label.config(text="\n".join([
+            self.dashboard_host_info_label.config(text="\n".join([
                 f"Host Name : {si.hostname}",
                 f"OS        : {si.os}",
                 f"CPU       : {si.cpu[:36] or '-'}",
@@ -7358,7 +7359,7 @@ class LogSentinelApp(tk.Tk):
                 f"{primary_disk.free_gb:.0f} / {primary_disk.total_gb:.0f} GB free"
                 if primary_disk else "Not detected yet"
             )
-            self.host_info_label.config(text="\n".join([
+            self.dashboard_host_info_label.config(text="\n".join([
                 f"Host Name : {socket.gethostname()}",
                 f"OS        : {platform.system()} {platform.release()}",
                 f"CPU       : {sysmon.get_cpu_count()} logical processor(s)",
