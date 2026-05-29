@@ -2910,33 +2910,6 @@ class LogSentinelApp(tk.Tk):
             grade_text = f"Grade {grade}" if grade != "—" else "-"
             self.score_grade_lbl.config(text=grade_text, fg=THEME["fg"])
 
-    def _draw_score_gauge(self, score: int, grade: str, color: str):
-        c = self.score_canvas
-        c.delete("all")
-        width = int(c.cget("width"))
-        height = int(c.cget("height"))
-        cx, cy = width // 2, height // 2
-        r = max(44, min(width, height) // 2 - 16)
-        ring_width = max(10, min(width, height) // 12)
-        c.create_oval(cx-r, cy-r, cx+r, cy+r,
-                      outline="#3d3d5c", width=ring_width)
-        if score > 0:
-            extent = -(score / 100) * 360
-            c.create_arc(cx-r, cy-r, cx+r, cy+r, start=90, extent=extent,
-                         outline=color, width=ring_width, style="arc")
-        c.create_text(cx, cy - 8, text=str(score), fill=color,
-                      font=("Segoe UI", max(22, width // 5), "bold"))
-        grade_text = f"Grade {grade}" if grade not in {"-", "â€”"} else "-"
-        c.create_text(cx, cy + 28, text=grade_text, fill=THEME["fg"],
-                      font=("Segoe UI", max(9, width // 15), "bold"))
-        for attr in ("score_number_lbl", "score_grade_lbl"):
-            label = getattr(self, attr, None)
-            if label is not None:
-                try:
-                    label.place_forget()
-                except tk.TclError:
-                    pass
-
     def _render_health(self):
         # Filter out user-snoozed/ignored/resolved
         active_findings = preferences.filter_active(self.findings)
