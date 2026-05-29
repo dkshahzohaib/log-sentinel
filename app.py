@@ -3365,7 +3365,8 @@ class LogSentinelApp(tk.Tk):
         self._sev_filter = tk.StringVar(value="All")
         self._cat_filter = tk.StringVar(value="All")
         self._card_search = tk.StringVar()
-        self._card_search.trace_add("write", lambda *_a: self._render_action_cards())
+        self._health_filter_after = None
+        self._card_search.trace_add("write", lambda *_a: self._schedule_render_action_cards())
         tk.Label(filters, text="Recommended actions", bg=THEME["bg"],
                  fg=THEME["accent"], font=("Segoe UI", 11, "bold")
                  ).grid(row=0, column=0, sticky="w", padx=(0, 12))
@@ -3375,8 +3376,8 @@ class LogSentinelApp(tk.Tk):
         ttk.Combobox(filters, textvariable=self._cat_filter, width=14,
                      values=["All"] + USER_CATEGORIES,
                      state="readonly").grid(row=0, column=2, padx=(0, 8))
-        self._sev_filter.trace_add("write", lambda *_a: self._render_action_cards())
-        self._cat_filter.trace_add("write", lambda *_a: self._render_action_cards())
+        self._sev_filter.trace_add("write", lambda *_a: self._schedule_render_action_cards())
+        self._cat_filter.trace_add("write", lambda *_a: self._schedule_render_action_cards())
         ttk.Entry(filters, textvariable=self._card_search, width=32
                   ).grid(row=0, column=3, sticky="w", padx=(0, 8))
         ttk.Button(filters, text="Clear",
@@ -3386,6 +3387,12 @@ class LogSentinelApp(tk.Tk):
                                           fg=THEME["fg_dim"],
                                           font=("Segoe UI", 9))
         self.health_filter_lbl.grid(row=0, column=5, sticky="w")
+        self.health_scan_summary_lbl = tk.Label(
+            filters, text="", bg=THEME["bg"], fg=THEME["fg_subtle"],
+            font=("Segoe UI", 9),
+        )
+        self.health_scan_summary_lbl.grid(row=1, column=0, columnspan=6,
+                                          sticky="w", pady=(6, 0))
 
         main = tk.PanedWindow(f, orient="horizontal", sashwidth=6,
                               bg=THEME["bg"], bd=0)
@@ -3405,10 +3412,14 @@ class LogSentinelApp(tk.Tk):
         ysb = ttk.Scrollbar(left, orient="vertical",
                             command=self.health_actions_tree.yview)
         self.health_actions_tree.configure(yscrollcommand=ysb.set)
+        for sev, color in SEVERITY_FG.items():
+            self.health_actions_tree.tag_configure(f"sev-{sev}", foreground=color)
         ysb.pack(side="right", fill="y")
         self.health_actions_tree.pack(side="left", fill="both", expand=True)
         self.health_actions_tree.bind("<<TreeviewSelect>>",
                                       self._on_health_action_select)
+        self.health_actions_tree.bind("<Double-1>",
+                                      lambda _e: self._health_details_selected())
 
         tk.Label(right, text="Action detail", bg=THEME["bg_card"],
                  fg=THEME["fg"], font=("Segoe UI", 13, "bold")
@@ -3458,6 +3469,21 @@ class LogSentinelApp(tk.Tk):
 
     def _on_health_action_select(self, _event=None):
         self._write_health_detail(self._selected_health_finding())
+
+    def _health_finding_key(self, finding):
+        if not finding:
+            return ""
+        ts = finding.timestamp.isoformat() if getattr(finding, "timestamp", None) else ""
+        return f"{finding.rule}|{finding.title}|{ts}"
+
+    def _schedule_render_action_cards(self):
+        after_id = getattr(self, "_health_filter_after", None)
+        if after_id:
+            try:
+                self.after_cancel(after_id)
+            except tk.TclError:
+                pass
+        self._health_filter_after = self.after(120, self._render_action_cards)
 
     def _write_health_detail(self, finding):
         if not hasattr(self, "health_detail_text"):
@@ -3537,11 +3563,21 @@ class LogSentinelApp(tk.Tk):
             self.health_delta_lbl.config(text="", fg=THEME["fg_dim"])
 
         cat_counts = {c: 0 for c in USER_CATEGORIES}
+        severity_counts = {s: 0 for s in SEVERITY_FG}
         for finding in active:
             cat = explain(finding.rule).user_category
             cat_counts[cat] = cat_counts.get(cat, 0) + 1
+            severity_counts[finding.severity] = severity_counts.get(finding.severity, 0) + 1
         for cat, label in self.user_cat_labels.items():
             label.config(text=str(cat_counts.get(cat, 0)))
+        self.health_scan_summary_lbl.config(
+            text=(
+                f"{len(self.events):,} logs  |  {len(self.processes):,} processes  |  "
+                f"{len(self.connections):,} connections  |  "
+                f"{severity_counts.get('Critical', 0)} critical, "
+                f"{severity_counts.get('High', 0)} high"
+            )
+        )
 
         try:
             scan_history.save_scan(
@@ -3559,6 +3595,8 @@ class LogSentinelApp(tk.Tk):
     def _render_action_cards(self):
         if not hasattr(self, "health_actions_tree"):
             return
+        self._health_filter_after = None
+        selected_key = self._health_finding_key(self._selected_health_finding())
         active = preferences.filter_active(self.findings)
         hidden_low = preferences.low_priority_hidden_count(self.findings)
         sev_f = self._sev_filter.get()
@@ -3588,12 +3626,16 @@ class LogSentinelApp(tk.Tk):
         visible = [f for f in sorted(active, key=sort_key, reverse=True) if keep(f)]
         self._health_visible_findings = visible
         self.health_actions_tree.delete(*self.health_actions_tree.get_children())
+        selected_item = None
         for idx, finding in enumerate(visible):
             pe = explain(finding.rule)
-            self.health_actions_tree.insert(
+            item = self.health_actions_tree.insert(
                 "", "end", tags=(str(idx),),
                 values=(finding.severity, pe.user_category, finding.title),
             )
+            self.health_actions_tree.item(item, tags=(str(idx), f"sev-{finding.severity}"))
+            if selected_key and self._health_finding_key(finding) == selected_key:
+                selected_item = item
         status = (
             f"{len(visible)} of {len(active)} active issues"
             if (sev_f != "All" or cat_f != "All" or search)
@@ -3603,10 +3645,11 @@ class LogSentinelApp(tk.Tk):
             status += f" ({hidden_low} hidden by settings)"
         self.health_filter_lbl.config(text=status)
         if visible:
-            first = self.health_actions_tree.get_children()[0]
-            self.health_actions_tree.selection_set(first)
-            self.health_actions_tree.focus(first)
-            self._write_health_detail(visible[0])
+            item = selected_item or self.health_actions_tree.get_children()[0]
+            self.health_actions_tree.selection_set(item)
+            self.health_actions_tree.focus(item)
+            idx = int(self.health_actions_tree.item(item, "tags")[0])
+            self._write_health_detail(visible[idx])
         else:
             self._write_health_detail(None)
 
