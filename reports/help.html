@@ -1,0 +1,27 @@
+<!DOCTYPE html>
+<html lang="en"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Log Sentinel Help</title>
+<style>
+body{font-family:Segoe UI,Arial,sans-serif;background:#f5f6f8;color:#20242a;margin:0;line-height:1.55}
+header{background:#111827;color:#fff;padding:28px 40px}main{max-width:980px;margin:0 auto;padding:26px}
+input{width:100%;padding:14px 16px;border:2px solid #d1d5db;border-radius:8px;font-size:16px;margin:16px 0 22px}
+.card{background:#fff;border-radius:8px;padding:18px 20px;margin:14px 0;border-left:4px solid #ed7700;box-shadow:0 1px 4px #0001}
+.tag{display:inline-block;background:#eef2ff;color:#3730a3;padding:2px 8px;border-radius:99px;font-size:12px;font-weight:700}
+h2{margin:8px 0;color:#111827}.hide{display:none}.simple{color:#4b5563}
+</style></head><body>
+<header><h1>Log Sentinel Help</h1><p>Search a feature. Written for normal people, not security specialists.</p></header>
+<main>
+<input id="search" placeholder="Search: report, PDF, panic, firewall, password, health score, baseline...">
+<section class="card" data-keys="report pdf export browser download save"><span class="tag">Reports</span><h2>Where do I find my report?</h2><p class="simple">When you export a report, Log Sentinel saves an HTML report and a PDF copy in the location you choose. The browser opens the HTML version because it is easy to read. The PDF is for sending to someone else.</p></section>
+<section class="card" data-keys="critical high danger alert finding"><span class="tag">Alerts</span><h2>What does Critical mean?</h2><p class="simple">Critical means look now. It does not always mean you are hacked, but it means the signal is serious enough that you should check it before banking, typing passwords, or working with sensitive files.</p></section>
+<section class="card" data-keys="health score grade a b c d f"><span class="tag">Health Score</span><h2>What is the health score?</h2><p class="simple">It is a 0-100 score. Critical findings remove more points than Low findings. Start with Critical and High, then clean up Medium and Low later.</p></section>
+<section class="card" data-keys="panic ransomware disconnect network isolate"><span class="tag">Panic</span><h2>When should I use Panic?</h2><p class="simple">Use Panic if you think something is actively spreading, stealing data, or controlling your PC. It turns off network adapters so the machine cannot talk out or spread.</p></section>
+<section class="card" data-keys="firewall block ip website domain hosts"><span class="tag">Firewall</span><h2>How does blocking work?</h2><p class="simple">IP and port blocking uses Windows Firewall. Website blocking edits the Windows hosts file. Changes are recorded in the local change log.</p></section>
+<section class="card" data-keys="baseline changed new autorun service task listener"><span class="tag">Baseline</span><h2>What means new since last baseline?</h2><p class="simple">The first scan learns what normal looks like. Later scans compare against that. New startup items, services, scheduled tasks, or listening ports are worth checking.</p></section>
+<section class="card" data-keys="password strength checker store vault"><span class="tag">Passwords</span><h2>Does Log Sentinel store passwords?</h2><p class="simple">No. The password checker should inspect strength and forget the password. Storing passwords would turn this into a vault, which is a different and riskier product.</p></section>
+<section class="card" data-keys="fake virus eicar test lab malware"><span class="tag">Testing</span><h2>What is the fake malware lab?</h2><p class="simple">It contains harmless text files that look suspicious to the scanner. They are for testing alerts safely. They are not real malware.</p></section>
+</main>
+<script>
+const q=document.getElementById('search');
+q.addEventListener('input',()=>{const s=q.value.toLowerCase();document.querySelectorAll('.card').forEach(c=>{const hay=(c.innerText+' '+c.dataset.keys).toLowerCase();c.classList.toggle('hide',s&&!hay.includes(s));});});
+</script></body></html>

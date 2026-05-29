@@ -1,0 +1,122 @@
+[
+  {
+    "rule": "ioc_match_process",
+    "severity": "Critical",
+    "title": "IOC match: mimikatz.exe (Credential dumper)",
+    "description": "Process 'mimikatz.exe' matched threat-intel database.\nType: process\nDescription: Credential dumper",
+    "timestamp": "2026-05-13T10:28:46.463648+00:00",
+    "event_count": 1
+  },
+  {
+    "rule": "new_service_installed",
+    "severity": "Critical",
+    "title": "New service installed: 'WindowsUpdateHelper'",
+    "description": "Service 'WindowsUpdateHelper' installed from suspicious path: c:\\users\\public\\svc.exe at 10:18:46.",
+    "timestamp": "2026-05-13T10:18:46.463648+00:00",
+    "event_count": 1
+  },
+  {
+    "rule": "audit_log_cleared",
+    "severity": "Critical",
+    "title": "Security audit log cleared",
+    "description": "The audit log was cleared by 'hacker' at 2026-05-13 10:08:46. This is a strong indicator of an attacker covering tracks.",
+    "timestamp": "2026-05-13T10:08:46.463648+00:00",
+    "event_count": 1
+  },
+  {
+    "rule": "privilege_escalation",
+    "severity": "High",
+    "title": "Sensitive privileges granted to 'hacker'",
+    "description": "User 'hacker' was granted: SeDebugPrivilege, SeImpersonatePrivilege, SeTcbPrivilege at 10:43:46.",
+    "timestamp": "2026-05-13T10:43:46.463648+00:00",
+    "event_count": 1
+  },
+  {
+    "rule": "suspicious_process",
+    "severity": "High",
+    "title": "Suspicious process: mimikatz",
+    "description": "Process 'c:\\temp\\mimikatz.exe' launched by 'hacker' with args: mimikatz.exe sekurlsa::logonpasswords",
+    "timestamp": "2026-05-13T10:28:46.463648+00:00",
+    "event_count": 1
+  },
+  {
+    "rule": "powershell_encoded",
+    "severity": "High",
+    "title": "Suspicious PowerShell script block detected",
+    "description": "PowerShell script contains: -enc. Snippet: powershell -enc sqbfafgaiaaoae4azqb3ac0atwbiagoazqbjahqaiaboaguadaauafcazqbiaemababpaguabgb0acaalqbdag8abgbuaguaywb0afqaaqbtaguabwb1ahqaiaaxadaakqauagqabwb3ag4ababvageazabtahqacgbpag4azwaoaccaaab0ahqacaa=",
+    "timestamp": "2026-05-13T10:23:46.463648+00:00",
+    "event_count": 1
+  },
+  {
+    "rule": "user_added_to_admin_group",
+    "severity": "High",
+    "title": "User added to privileged group 'Administrators'",
+    "description": "'backdoor_user' was added to group 'Administrators' by 'hacker'.",
+    "timestamp": "2026-05-13T10:14:46.463648+00:00",
+    "event_count": 1
+  },
+  {
+    "rule": "brute_force_login",
+    "severity": "High",
+    "title": "Brute-force login attempt on account 'Administrator'",
+    "description": "6 failed logins for 'Administrator' within 5 minutes (first: 09:48:46).",
+    "timestamp": "2026-05-13T09:48:46.463648+00:00",
+    "event_count": 6
+  },
+  {
+    "rule": "brute_force_from_ip",
+    "severity": "High",
+    "title": "Brute-force from IP 185.220.101.45",
+    "description": "6 failed logins from 185.220.101.45 in 5 min.",
+    "timestamp": "2026-05-13T09:48:46.463648+00:00",
+    "event_count": 6
+  },
+  {
+    "rule": "account_locked_out",
+    "severity": "Medium",
+    "title": "Account locked out: 'bob_smith'",
+    "description": "Account 'bob_smith' was locked out (triggered from WORKSTATION-07). May indicate a brute-force attempt.",
+    "timestamp": "2026-05-13T10:58:46.463648+00:00",
+    "event_count": 1
+  },
+  {
+    "rule": "firewall_rule_changed",
+    "severity": "Medium",
+    "title": "Firewall rule added: 'Allow_Backdoor_4444'",
+    "description": "Firewall rule 'Allow_Backdoor_4444' was added at 10:38:46. Unexpected changes may indicate an attacker disabling defenses.",
+    "timestamp": "2026-05-13T10:38:46.463648+00:00",
+    "event_count": 1
+  },
+  {
+    "rule": "scheduled_task_created",
+    "severity": "Medium",
+    "title": "Scheduled task created: '\\Microsoft\\Windows\\SystemUpdateCheck'",
+    "description": "Task '\\Microsoft\\Windows\\SystemUpdateCheck' was created by 'hacker' at 10:33:46. Scheduled tasks are a common persistence technique.",
+    "timestamp": "2026-05-13T10:33:46.463648+00:00",
+    "event_count": 1
+  },
+  {
+    "rule": "new_user_created",
+    "severity": "Medium",
+    "title": "New local user account created: 'backdoor_user'",
+    "description": "Account 'backdoor_user' was created by 'hacker' at 2026-05-13 10:13:46.",
+    "timestamp": "2026-05-13T10:13:46.463648+00:00",
+    "event_count": 1
+  },
+  {
+    "rule": "system_crash",
+    "severity": "Medium",
+    "title": "Unexpected system shutdown detected",
+    "description": "System experienced an unexpected shutdown at 2026-05-13 08:28:46. Could be hardware failure, crash, or forced power-off.",
+    "timestamp": "2026-05-13T08:28:46.463648+00:00",
+    "event_count": 1
+  },
+  {
+    "rule": "off_hours_logon",
+    "severity": "Low",
+    "title": "Off-hours logon: 'contractor_bob'",
+    "description": "User 'contractor_bob' logged in at 03:15 UTC (outside 06:00\u201322:00 UTC).",
+    "timestamp": "2026-05-13T03:15:00.463648+00:00",
+    "event_count": 1
+  }
+]

@@ -1,0 +1,3 @@
+# No third-party dependencies required.
+# Standard library only (subprocess, xml, json, socket, pathlib, datetime).
+# Python 3.10+ required (uses match/case style type hints).

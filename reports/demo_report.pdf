@@ -1,0 +1,203 @@
+%PDF-1.4
+1 0 obj
+<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica >>
+endobj
+2 0 obj
+<< /Length 2000 >>
+stream
+BT
+/F1 10 Tf
+50 760 Td
+14 TL
+(Log Sentinel Security Report) Tj
+T*
+(Host: MSI) Tj
+T*
+(Generated: 2026-05-13 11:48:46 UTC) Tj
+T*
+(Window: last 24h) Tj
+T*
+(Events analysed: 21) Tj
+T*
+(Findings: 15) Tj
+T*
+() Tj
+T*
+(Severity summary:) Tj
+T*
+(- Critical: 3) Tj
+T*
+(- High: 6) Tj
+T*
+(- Medium: 5) Tj
+T*
+(- Low: 1) Tj
+T*
+(- Info: 0) Tj
+T*
+() Tj
+T*
+(Plain-English next steps:) Tj
+T*
+(- Critical means stop and investigate now. Do not ignore it.) Tj
+T*
+(- High means fix soon. Check whether you recognize the activity.) Tj
+T*
+(- If unsure, disconnect from the internet and ask for help.) Tj
+T*
+() Tj
+T*
+(Findings:) Tj
+T*
+(1. [Critical] IOC match: mimikatz.exe \(Credential dumper\)) Tj
+T*
+(   Process 'mimikatz.exe' matched threat-intel database. Type: process Description: Credential) Tj
+T*
+(   dumper) Tj
+T*
+() Tj
+T*
+(2. [Critical] New service installed: 'WindowsUpdateHelper') Tj
+T*
+(   Service 'WindowsUpdateHelper' installed from suspicious path: c:\\users\\public\\svc.exe at) Tj
+T*
+(   10:18:46.) Tj
+T*
+() Tj
+T*
+(3. [Critical] Security audit log cleared) Tj
+T*
+(   The audit log was cleared by 'hacker' at 2026-05-13 10:08:46. This is a strong indicator of) Tj
+T*
+(   an attacker covering tracks.) Tj
+T*
+() Tj
+T*
+(4. [High] Sensitive privileges granted to 'hacker') Tj
+T*
+(   User 'hacker' was granted: SeDebugPrivilege, SeImpersonatePrivilege, SeTcbPrivilege at) Tj
+T*
+(   10:43:46.) Tj
+T*
+() Tj
+T*
+(5. [High] Suspicious process: mimikatz) Tj
+T*
+(   Process 'c:\\temp\\mimikatz.exe' launched by 'hacker' with args: mimikatz.exe) Tj
+T*
+(   sekurlsa::logonpasswords) Tj
+T*
+() Tj
+T*
+(6. [High] Suspicious PowerShell script block detected) Tj
+T*
+(   PowerShell script contains: -enc. Snippet: powershell -enc sqbfafgaiaaoae4azqb3ac0atwbiagoaz) Tj
+T*
+(   qbjahqaiaboaguadaauafcazqbiaemababpaguabgb0acaalqbdag8abgbuaguaywb0afqaaqbtaguabwb1ahqaiaaxa) Tj
+T*
+(   daakqauagqabwb3ag4ababvageazabtahqacgbpag4azwaoaccaaab0ahqacaa=) Tj
+T*
+() Tj
+T*
+(7. [High] User added to privileged group 'Administrators') Tj
+T*
+ET
+endstream
+endobj
+3 0 obj
+<< /Type /Page /Parent 6 0 R /MediaBox [0 0 612 792] /Resources << /Font << /F1 1 0 R >> >> /Contents 2 0 R >>
+endobj
+4 0 obj
+<< /Length 1579 >>
+stream
+BT
+/F1 10 Tf
+50 760 Td
+14 TL
+(   'backdoor_user' was added to group 'Administrators' by 'hacker'.) Tj
+T*
+() Tj
+T*
+(8. [High] Brute-force login attempt on account 'Administrator') Tj
+T*
+(   6 failed logins for 'Administrator' within 5 minutes \(first: 09:48:46\).) Tj
+T*
+() Tj
+T*
+(9. [High] Brute-force from IP 185.220.101.45) Tj
+T*
+(   6 failed logins from 185.220.101.45 in 5 min.) Tj
+T*
+() Tj
+T*
+(10. [Medium] Account locked out: 'bob_smith') Tj
+T*
+(   Account 'bob_smith' was locked out \(triggered from WORKSTATION-07\). May indicate a brute-) Tj
+T*
+(   force attempt.) Tj
+T*
+() Tj
+T*
+(11. [Medium] Firewall rule added: 'Allow_Backdoor_4444') Tj
+T*
+(   Firewall rule 'Allow_Backdoor_4444' was added at 10:38:46. Unexpected changes may indicate) Tj
+T*
+(   an attacker disabling defenses.) Tj
+T*
+() Tj
+T*
+(12. [Medium] Scheduled task created: '\\Microsoft\\Windows\\SystemUpdateCheck') Tj
+T*
+(   Task '\\Microsoft\\Windows\\SystemUpdateCheck' was created by 'hacker' at 10:33:46. Scheduled) Tj
+T*
+(   tasks are a common persistence technique.) Tj
+T*
+() Tj
+T*
+(13. [Medium] New local user account created: 'backdoor_user') Tj
+T*
+(   Account 'backdoor_user' was created by 'hacker' at 2026-05-13 10:13:46.) Tj
+T*
+() Tj
+T*
+(14. [Medium] Unexpected system shutdown detected) Tj
+T*
+(   System experienced an unexpected shutdown at 2026-05-13 08:28:46. Could be hardware failure,) Tj
+T*
+(   crash, or forced power-off.) Tj
+T*
+() Tj
+T*
+(15. [Low] Off-hours logon: 'contractor_bob') Tj
+T*
+(   User 'contractor_bob' logged in at 03:15 UTC \(outside 06:00?22:00 UTC\).) Tj
+T*
+() Tj
+T*
+ET
+endstream
+endobj
+5 0 obj
+<< /Type /Page /Parent 6 0 R /MediaBox [0 0 612 792] /Resources << /Font << /F1 1 0 R >> >> /Contents 4 0 R >>
+endobj
+6 0 obj
+<< /Type /Pages /Kids [3 0 R 5 0 R] /Count 2 >>
+endobj
+7 0 obj
+<< /Type /Catalog /Pages 6 0 R >>
+endobj
+xref
+0 8
+0000000000 65535 f 
+0000000009 00000 n 
+0000000079 00000 n 
+0000002131 00000 n 
+0000002257 00000 n 
+0000003888 00000 n 
+0000004014 00000 n 
+0000004077 00000 n 
+trailer
+<< /Size 8 /Root 7 0 R >>
+startxref
+4126
+%%EOF

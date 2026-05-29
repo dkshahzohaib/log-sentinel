@@ -1,0 +1,350 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Log Sentinel Report - MSI</title>
+<style>
+*{box-sizing:border-box}body{font-family:Segoe UI,Arial,sans-serif;background:#f0f2f5;color:#333;margin:0;line-height:1.5}
+.header{background:#111827;color:#fff;padding:30px 44px}.header h1{margin:0 0 8px;font-size:28px}.meta,.muted{color:#6b7280;font-size:14px}.header .meta{color:#cbd5e1}
+.actions{display:flex;gap:10px;flex-wrap:wrap;margin-top:18px}.action{background:#ed7700;color:#fff;border:0;border-radius:6px;padding:10px 14px;font-weight:700;cursor:pointer;text-decoration:none;display:inline-block}.action.secondary{background:#374151}
+.container{max-width:1100px;margin:0 auto;padding:30px 24px}.section{background:#fff;border-radius:10px;padding:24px 28px;margin-bottom:22px;box-shadow:0 2px 8px #00000012}.section h2{margin:0 0 14px;color:#111827}
+.health{display:grid;grid-template-columns:190px 1fr;gap:28px;align-items:center}.gauge{width:170px;height:170px;border:12px solid;border-radius:50%;display:flex;align-items:center;justify-content:center;flex-direction:column}.score{font-size:44px;font-weight:800;line-height:1}.eyebrow{font-size:12px;font-weight:800;color:#6b7280;letter-spacing:1.4px}
+.cards{display:flex;gap:12px;flex-wrap:wrap;margin-bottom:14px}.stat{color:#fff;border-radius:8px;padding:16px 24px;min-width:105px;text-align:center}.stat-num{font-size:30px;font-weight:800}
+.plain-help{background:#fff7e8;border-left:4px solid #ed7700;padding:14px;border-radius:6px;margin-top:16px;color:#46320f}
+.fbtn{border:2px solid #999;background:#fff;color:#777;padding:7px 14px;border-radius:20px;cursor:pointer;font-size:13px;margin:2px;font-weight:700}.fbtn.active,.fbtn:hover{background:#111827!important;border-color:#111827!important;color:#fff!important}
+.finding{margin:16px 0;padding:14px 16px;background:#fff;border-radius:6px;border-left:4px solid;box-shadow:0 1px 3px #00000014}.finding-head{display:flex;align-items:center;gap:10px;margin-bottom:8px}.badge{color:#fff;padding:2px 8px;border-radius:4px;font-size:12px;font-weight:800}.num,.time{color:#6b7280;font-size:13px}.time{margin-left:auto}.break{word-break:break-all;font-size:13px}table{width:100%;border-collapse:collapse;margin-top:8px;font-size:13px}th,td{padding:5px 8px;border-bottom:1px solid #e5e7eb;text-align:left}thead{background:#f9fafb}summary{cursor:pointer;color:#374151;font-weight:700}.good{text-align:center;color:#15803d;font-size:18px}
+@media print{body{background:#fff}.header{background:#111827!important;color:#fff!important;-webkit-print-color-adjust:exact;print-color-adjust:exact}.section{box-shadow:none;border:1px solid #ddd;page-break-inside:avoid}.actions,.fbtn,button{display:none!important}}
+</style>
+</head>
+<body>
+<header class="header">
+  <h1>Log Sentinel Security Report</h1>
+  <div class="meta">Host: <strong>MSI</strong> | Generated: <strong>2026-05-13 11:48:46 UTC</strong> | Window: last <strong>24h</strong></div>
+  <div class="actions">
+    <button class="action" onclick="window.print()">Download / Save as PDF</button>
+    <a class="action secondary" href="help.html">Search Help</a>
+    <a class="action secondary" href="demo_report.pdf">Open PDF Copy</a>
+  </div>
+</header>
+<main class="container">
+  
+  <section class="section">
+    <h2>Overview</h2>
+    <div class="cards">
+<div class="stat" style="background:#c0392b;">
+  <div class="stat-num">3</div>
+  <div>Critical</div>
+</div>
+<div class="stat" style="background:#e67e22;">
+  <div class="stat-num">6</div>
+  <div>High</div>
+</div>
+<div class="stat" style="background:#f1c40f;">
+  <div class="stat-num">5</div>
+  <div>Medium</div>
+</div>
+<div class="stat" style="background:#3498db;">
+  <div class="stat-num">1</div>
+  <div>Low</div>
+</div>
+<div class="stat" style="background:#95a5a6;">
+  <div class="stat-num">0</div>
+  <div>Info</div>
+</div></div>
+    <p class="meta">Events analysed: <strong>21</strong> Security: <strong>18</strong> | System: <strong>2</strong> | Windows PowerShell: <strong>1</strong></p>
+    <div class="plain-help"><strong>Where is my report?</strong> This browser report is the easy-to-read version. A PDF copy named <strong>demo_report.pdf</strong> is saved in the same folder. Use <strong>Search Help</strong> if you do not know what a feature or alert means.</div>
+  </section>
+  <section class="section">
+    <h2>Findings (15)</h2>
+    <div><button onclick="filterAll()" class="fbtn active" data-sev="ALL">All</button><button onclick="filterSev('Critical')" class="fbtn" data-sev="Critical" style="border-color:#c0392b;color:#c0392b;">Critical (3)</button><button onclick="filterSev('High')" class="fbtn" data-sev="High" style="border-color:#e67e22;color:#e67e22;">High (6)</button><button onclick="filterSev('Medium')" class="fbtn" data-sev="Medium" style="border-color:#f1c40f;color:#f1c40f;">Medium (5)</button><button onclick="filterSev('Low')" class="fbtn" data-sev="Low" style="border-color:#3498db;color:#3498db;">Low (1)</button><button onclick="filterSev('Info')" class="fbtn" data-sev="Info" style="border-color:#95a5a6;color:#95a5a6;">Info (0)</button></div>
+    <div id="findings-list">
+<div class="finding" data-sev="Critical" style="border-left-color:#c0392b;">
+  <div class="finding-head">
+    <span class="num">#1</span>
+    <span class="badge" style="background:#c0392b;">Critical</span>
+    <strong>IOC match: mimikatz.exe (Credential dumper)</strong>
+    <span class="time">2026-05-13 10:28:46 UTC</span>
+  </div>
+  <p>Process &#x27;mimikatz.exe&#x27; matched threat-intel database.
+Type: process
+Description: Credential dumper</p>
+  
+<details>
+  <summary>Show 1 related event(s)</summary>
+  <table>
+    <thead><tr><th>Time</th><th>Channel</th><th>ID</th><th>User</th><th>Detail</th></tr></thead>
+    <tbody><tr><td>10:28:46</td><td>Security</td><td>4688</td><td>hacker</td><td class="break">Demo EventID 4688</td></tr></tbody>
+  </table>
+  
+</details>
+</div>
+<div class="finding" data-sev="Critical" style="border-left-color:#c0392b;">
+  <div class="finding-head">
+    <span class="num">#2</span>
+    <span class="badge" style="background:#c0392b;">Critical</span>
+    <strong>New service installed: &#x27;WindowsUpdateHelper&#x27;</strong>
+    <span class="time">2026-05-13 10:18:46 UTC</span>
+  </div>
+  <p>Service &#x27;WindowsUpdateHelper&#x27; installed from suspicious path: c:\users\public\svc.exe at 10:18:46.</p>
+  
+<details>
+  <summary>Show 1 related event(s)</summary>
+  <table>
+    <thead><tr><th>Time</th><th>Channel</th><th>ID</th><th>User</th><th>Detail</th></tr></thead>
+    <tbody><tr><td>10:18:46</td><td>System</td><td>7045</td><td>SYSTEM</td><td class="break">Demo EventID 7045</td></tr></tbody>
+  </table>
+  
+</details>
+</div>
+<div class="finding" data-sev="Critical" style="border-left-color:#c0392b;">
+  <div class="finding-head">
+    <span class="num">#3</span>
+    <span class="badge" style="background:#c0392b;">Critical</span>
+    <strong>Security audit log cleared</strong>
+    <span class="time">2026-05-13 10:08:46 UTC</span>
+  </div>
+  <p>The audit log was cleared by &#x27;hacker&#x27; at 2026-05-13 10:08:46. This is a strong indicator of an attacker covering tracks.</p>
+  
+<details>
+  <summary>Show 1 related event(s)</summary>
+  <table>
+    <thead><tr><th>Time</th><th>Channel</th><th>ID</th><th>User</th><th>Detail</th></tr></thead>
+    <tbody><tr><td>10:08:46</td><td>Security</td><td>1102</td><td>hacker</td><td class="break">Demo EventID 1102</td></tr></tbody>
+  </table>
+  
+</details>
+</div>
+<div class="finding" data-sev="High" style="border-left-color:#e67e22;">
+  <div class="finding-head">
+    <span class="num">#4</span>
+    <span class="badge" style="background:#e67e22;">High</span>
+    <strong>Sensitive privileges granted to &#x27;hacker&#x27;</strong>
+    <span class="time">2026-05-13 10:43:46 UTC</span>
+  </div>
+  <p>User &#x27;hacker&#x27; was granted: SeDebugPrivilege, SeImpersonatePrivilege, SeTcbPrivilege at 10:43:46.</p>
+  
+<details>
+  <summary>Show 1 related event(s)</summary>
+  <table>
+    <thead><tr><th>Time</th><th>Channel</th><th>ID</th><th>User</th><th>Detail</th></tr></thead>
+    <tbody><tr><td>10:43:46</td><td>Security</td><td>4672</td><td>hacker</td><td class="break">Demo EventID 4672</td></tr></tbody>
+  </table>
+  
+</details>
+</div>
+<div class="finding" data-sev="High" style="border-left-color:#e67e22;">
+  <div class="finding-head">
+    <span class="num">#5</span>
+    <span class="badge" style="background:#e67e22;">High</span>
+    <strong>Suspicious process: mimikatz</strong>
+    <span class="time">2026-05-13 10:28:46 UTC</span>
+  </div>
+  <p>Process &#x27;c:\temp\mimikatz.exe&#x27; launched by &#x27;hacker&#x27; with args: mimikatz.exe sekurlsa::logonpasswords</p>
+  
+<details>
+  <summary>Show 1 related event(s)</summary>
+  <table>
+    <thead><tr><th>Time</th><th>Channel</th><th>ID</th><th>User</th><th>Detail</th></tr></thead>
+    <tbody><tr><td>10:28:46</td><td>Security</td><td>4688</td><td>hacker</td><td class="break">Demo EventID 4688</td></tr></tbody>
+  </table>
+  
+</details>
+</div>
+<div class="finding" data-sev="High" style="border-left-color:#e67e22;">
+  <div class="finding-head">
+    <span class="num">#6</span>
+    <span class="badge" style="background:#e67e22;">High</span>
+    <strong>Suspicious PowerShell script block detected</strong>
+    <span class="time">2026-05-13 10:23:46 UTC</span>
+  </div>
+  <p>PowerShell script contains: -enc. Snippet: powershell -enc sqbfafgaiaaoae4azqb3ac0atwbiagoazqbjahqaiaboaguadaauafcazqbiaemababpaguabgb0acaalqbdag8abgbuaguaywb0afqaaqbtaguabwb1ahqaiaaxadaakqauagqabwb3ag4ababvageazabtahqacgbpag4azwaoaccaaab0ahqacaa=</p>
+  
+<details>
+  <summary>Show 1 related event(s)</summary>
+  <table>
+    <thead><tr><th>Time</th><th>Channel</th><th>ID</th><th>User</th><th>Detail</th></tr></thead>
+    <tbody><tr><td>10:23:46</td><td>Windows PowerShell</td><td>4104</td><td>hacker</td><td class="break">Demo EventID 4104</td></tr></tbody>
+  </table>
+  
+</details>
+</div>
+<div class="finding" data-sev="High" style="border-left-color:#e67e22;">
+  <div class="finding-head">
+    <span class="num">#7</span>
+    <span class="badge" style="background:#e67e22;">High</span>
+    <strong>User added to privileged group &#x27;Administrators&#x27;</strong>
+    <span class="time">2026-05-13 10:14:46 UTC</span>
+  </div>
+  <p>&#x27;backdoor_user&#x27; was added to group &#x27;Administrators&#x27; by &#x27;hacker&#x27;.</p>
+  
+<details>
+  <summary>Show 1 related event(s)</summary>
+  <table>
+    <thead><tr><th>Time</th><th>Channel</th><th>ID</th><th>User</th><th>Detail</th></tr></thead>
+    <tbody><tr><td>10:14:46</td><td>Security</td><td>4732</td><td>hacker</td><td class="break">Demo EventID 4732</td></tr></tbody>
+  </table>
+  
+</details>
+</div>
+<div class="finding" data-sev="High" style="border-left-color:#e67e22;">
+  <div class="finding-head">
+    <span class="num">#8</span>
+    <span class="badge" style="background:#e67e22;">High</span>
+    <strong>Brute-force login attempt on account &#x27;Administrator&#x27;</strong>
+    <span class="time">2026-05-13 09:48:46 UTC</span>
+  </div>
+  <p>6 failed logins for &#x27;Administrator&#x27; within 5 minutes (first: 09:48:46).</p>
+  
+<details>
+  <summary>Show 6 related event(s)</summary>
+  <table>
+    <thead><tr><th>Time</th><th>Channel</th><th>ID</th><th>User</th><th>Detail</th></tr></thead>
+    <tbody><tr><td>09:48:46</td><td>Security</td><td>4625</td><td>Administrator</td><td class="break">Demo EventID 4625</td></tr><tr><td>09:49:46</td><td>Security</td><td>4625</td><td>Administrator</td><td class="break">Demo EventID 4625</td></tr><tr><td>09:50:46</td><td>Security</td><td>4625</td><td>Administrator</td><td class="break">Demo EventID 4625</td></tr><tr><td>09:51:46</td><td>Security</td><td>4625</td><td>Administrator</td><td class="break">Demo EventID 4625</td></tr><tr><td>09:52:46</td><td>Security</td><td>4625</td><td>Administrator</td><td class="break">Demo EventID 4625</td></tr></tbody>
+  </table>
+  <p class="muted">... and 1 more events</p>
+</details>
+</div>
+<div class="finding" data-sev="High" style="border-left-color:#e67e22;">
+  <div class="finding-head">
+    <span class="num">#9</span>
+    <span class="badge" style="background:#e67e22;">High</span>
+    <strong>Brute-force from IP 185.220.101.45</strong>
+    <span class="time">2026-05-13 09:48:46 UTC</span>
+  </div>
+  <p>6 failed logins from 185.220.101.45 in 5 min.</p>
+  
+<details>
+  <summary>Show 6 related event(s)</summary>
+  <table>
+    <thead><tr><th>Time</th><th>Channel</th><th>ID</th><th>User</th><th>Detail</th></tr></thead>
+    <tbody><tr><td>09:48:46</td><td>Security</td><td>4625</td><td>Administrator</td><td class="break">Demo EventID 4625</td></tr><tr><td>09:49:46</td><td>Security</td><td>4625</td><td>Administrator</td><td class="break">Demo EventID 4625</td></tr><tr><td>09:50:46</td><td>Security</td><td>4625</td><td>Administrator</td><td class="break">Demo EventID 4625</td></tr><tr><td>09:51:46</td><td>Security</td><td>4625</td><td>Administrator</td><td class="break">Demo EventID 4625</td></tr><tr><td>09:52:46</td><td>Security</td><td>4625</td><td>Administrator</td><td class="break">Demo EventID 4625</td></tr></tbody>
+  </table>
+  <p class="muted">... and 1 more events</p>
+</details>
+</div>
+<div class="finding" data-sev="Medium" style="border-left-color:#f1c40f;">
+  <div class="finding-head">
+    <span class="num">#10</span>
+    <span class="badge" style="background:#f1c40f;">Medium</span>
+    <strong>Account locked out: &#x27;bob_smith&#x27;</strong>
+    <span class="time">2026-05-13 10:58:46 UTC</span>
+  </div>
+  <p>Account &#x27;bob_smith&#x27; was locked out (triggered from WORKSTATION-07). May indicate a brute-force attempt.</p>
+  
+<details>
+  <summary>Show 1 related event(s)</summary>
+  <table>
+    <thead><tr><th>Time</th><th>Channel</th><th>ID</th><th>User</th><th>Detail</th></tr></thead>
+    <tbody><tr><td>10:58:46</td><td>Security</td><td>4740</td><td>bob_smith</td><td class="break">Demo EventID 4740</td></tr></tbody>
+  </table>
+  
+</details>
+</div>
+<div class="finding" data-sev="Medium" style="border-left-color:#f1c40f;">
+  <div class="finding-head">
+    <span class="num">#11</span>
+    <span class="badge" style="background:#f1c40f;">Medium</span>
+    <strong>Firewall rule added: &#x27;Allow_Backdoor_4444&#x27;</strong>
+    <span class="time">2026-05-13 10:38:46 UTC</span>
+  </div>
+  <p>Firewall rule &#x27;Allow_Backdoor_4444&#x27; was added at 10:38:46. Unexpected changes may indicate an attacker disabling defenses.</p>
+  
+<details>
+  <summary>Show 1 related event(s)</summary>
+  <table>
+    <thead><tr><th>Time</th><th>Channel</th><th>ID</th><th>User</th><th>Detail</th></tr></thead>
+    <tbody><tr><td>10:38:46</td><td>Security</td><td>4946</td><td>hacker</td><td class="break">Demo EventID 4946</td></tr></tbody>
+  </table>
+  
+</details>
+</div>
+<div class="finding" data-sev="Medium" style="border-left-color:#f1c40f;">
+  <div class="finding-head">
+    <span class="num">#12</span>
+    <span class="badge" style="background:#f1c40f;">Medium</span>
+    <strong>Scheduled task created: &#x27;\Microsoft\Windows\SystemUpdateCheck&#x27;</strong>
+    <span class="time">2026-05-13 10:33:46 UTC</span>
+  </div>
+  <p>Task &#x27;\Microsoft\Windows\SystemUpdateCheck&#x27; was created by &#x27;hacker&#x27; at 10:33:46. Scheduled tasks are a common persistence technique.</p>
+  
+<details>
+  <summary>Show 1 related event(s)</summary>
+  <table>
+    <thead><tr><th>Time</th><th>Channel</th><th>ID</th><th>User</th><th>Detail</th></tr></thead>
+    <tbody><tr><td>10:33:46</td><td>Security</td><td>4698</td><td>hacker</td><td class="break">Demo EventID 4698</td></tr></tbody>
+  </table>
+  
+</details>
+</div>
+<div class="finding" data-sev="Medium" style="border-left-color:#f1c40f;">
+  <div class="finding-head">
+    <span class="num">#13</span>
+    <span class="badge" style="background:#f1c40f;">Medium</span>
+    <strong>New local user account created: &#x27;backdoor_user&#x27;</strong>
+    <span class="time">2026-05-13 10:13:46 UTC</span>
+  </div>
+  <p>Account &#x27;backdoor_user&#x27; was created by &#x27;hacker&#x27; at 2026-05-13 10:13:46.</p>
+  
+<details>
+  <summary>Show 1 related event(s)</summary>
+  <table>
+    <thead><tr><th>Time</th><th>Channel</th><th>ID</th><th>User</th><th>Detail</th></tr></thead>
+    <tbody><tr><td>10:13:46</td><td>Security</td><td>4720</td><td>hacker</td><td class="break">Demo EventID 4720</td></tr></tbody>
+  </table>
+  
+</details>
+</div>
+<div class="finding" data-sev="Medium" style="border-left-color:#f1c40f;">
+  <div class="finding-head">
+    <span class="num">#14</span>
+    <span class="badge" style="background:#f1c40f;">Medium</span>
+    <strong>Unexpected system shutdown detected</strong>
+    <span class="time">2026-05-13 08:28:46 UTC</span>
+  </div>
+  <p>System experienced an unexpected shutdown at 2026-05-13 08:28:46. Could be hardware failure, crash, or forced power-off.</p>
+  
+<details>
+  <summary>Show 1 related event(s)</summary>
+  <table>
+    <thead><tr><th>Time</th><th>Channel</th><th>ID</th><th>User</th><th>Detail</th></tr></thead>
+    <tbody><tr><td>08:28:46</td><td>System</td><td>6008</td><td>SYSTEM</td><td class="break">Demo EventID 6008</td></tr></tbody>
+  </table>
+  
+</details>
+</div>
+<div class="finding" data-sev="Low" style="border-left-color:#3498db;">
+  <div class="finding-head">
+    <span class="num">#15</span>
+    <span class="badge" style="background:#3498db;">Low</span>
+    <strong>Off-hours logon: &#x27;contractor_bob&#x27;</strong>
+    <span class="time">2026-05-13 03:15:00 UTC</span>
+  </div>
+  <p>User &#x27;contractor_bob&#x27; logged in at 03:15 UTC (outside 06:00–22:00 UTC).</p>
+  
+<details>
+  <summary>Show 1 related event(s)</summary>
+  <table>
+    <thead><tr><th>Time</th><th>Channel</th><th>ID</th><th>User</th><th>Detail</th></tr></thead>
+    <tbody><tr><td>03:15:00</td><td>Security</td><td>4624</td><td>contractor_bob</td><td class="break">Off-hours logon demo</td></tr></tbody>
+  </table>
+  
+</details>
+</div></div>
+  </section>
+  <p class="muted" style="text-align:center">Generated by Log Sentinel. Keep this report private because it may contain usernames, hostnames, process names, and security details.</p>
+</main>
+<script>
+function filterAll(){
+ document.querySelectorAll('.finding').forEach(el=>el.style.display='');
+ document.querySelectorAll('.fbtn').forEach(b=>b.classList.remove('active'));
+ document.querySelector('[data-sev="ALL"]').classList.add('active');
+}
+function filterSev(sev){
+ document.querySelectorAll('.finding').forEach(el=>{el.style.display=el.dataset.sev===sev?'':'none';});
+ document.querySelectorAll('.fbtn').forEach(b=>b.classList.remove('active'));
+ document.querySelector('[data-sev="'+sev+'"]').classList.add('active');
+}
+</script>
+</body>
+</html>

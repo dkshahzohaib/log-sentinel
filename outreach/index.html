@@ -1,0 +1,1630 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Log Sentinel — see what your PC is really doing</title>
+<meta name="description" content="A 32 MB Windows app that catches what antivirus misses. Real-time monitoring, plain-English findings, one-click fixes. No cloud, no telemetry, no subscription.">
+
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&family=Geist:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
+
+<style>
+  :root {
+    /* Surfaces — deeper blacks, layered grays */
+    --bg:       #0a0a0f;
+    --bg-card:  #111118;
+    --bg-2:     #1a1a25;
+    --bg-3:     #20202e;
+    --bg-soft:  #2a2a3a;
+    --line:     rgba(255,255,255,0.06);
+    --line-2:   rgba(255,255,255,0.1);
+
+    /* Text */
+    --fg:       #f4f4f7;
+    --fg-2:     #c2c2d0;
+    --fg-3:     #8a8aa0;
+    --fg-4:     #5e5e75;
+
+    /* Brand — softer, less primary */
+    --teal:     #7ee7d1;
+    --teal-2:   #5dd5e8;
+    --teal-3:   #4ecdc4;
+    --violet:   #a78bfa;
+    --pink:     #f471b5;
+    --orange:   #ff8a5b;
+    --red:      #ff6b6b;
+    --gold:     #fbbf24;
+
+    /* Effects */
+    --glow-teal:   0 0 60px rgba(126,231,209,0.25);
+    --glow-violet: 0 0 60px rgba(167,139,250,0.2);
+
+    --r-sm: 8px;
+    --r-md: 14px;
+    --r-lg: 20px;
+    --r-xl: 28px;
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  html { scroll-behavior: smooth; }
+  body {
+    font-family: 'Geist', 'Inter', ui-sans-serif, system-ui, sans-serif;
+    background: var(--bg);
+    color: var(--fg);
+    line-height: 1.55;
+    -webkit-font-smoothing: antialiased;
+    text-rendering: optimizeLegibility;
+    overflow-x: hidden;
+  }
+  body::before {
+    /* mesh gradient backdrop */
+    content: ""; position: fixed; inset: 0; z-index: -1; pointer-events: none;
+    background:
+      radial-gradient(800px 600px at 5% 0%,   rgba(126,231,209,0.10), transparent 60%),
+      radial-gradient(900px 700px at 95% 8%,  rgba(167,139,250,0.08), transparent 65%),
+      radial-gradient(700px 500px at 50% 90%, rgba(93,213,232,0.06), transparent 60%),
+      radial-gradient(circle at 30% 40%, rgba(244,113,181,0.04), transparent 50%);
+    background-attachment: fixed;
+  }
+  /* subtle grain overlay */
+  body::after {
+    content: ""; position: fixed; inset: 0; z-index: -1; pointer-events: none;
+    background-image: url("data:image/svg+xml;utf8,<svg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'><filter id='n'><feTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='3' stitchTiles='stitch'/><feColorMatrix values='0 0 0 0 1 0 0 0 0 1 0 0 0 0 1 0 0 0 0.04 0'/></filter><rect width='100%' height='100%' filter='url(%23n)'/></svg>");
+    opacity: 0.5;
+  }
+
+  a { color: inherit; text-decoration: none; }
+  ::selection { background: var(--teal); color: #000; }
+
+  code, .mono {
+    font-family: 'JetBrains Mono', ui-monospace, 'SF Mono', Consolas, monospace;
+    font-size: 0.9em;
+  }
+
+  .wrap { max-width: 1280px; margin: 0 auto; padding: 0 28px; }
+
+  /* ───────────── NAV ───────────── */
+  nav {
+    position: sticky; top: 12px; z-index: 100;
+    margin: 0 auto;
+    max-width: 1200px;
+    padding: 0 16px;
+  }
+  .nav-inner {
+    background: rgba(17, 17, 24, 0.7);
+    backdrop-filter: blur(20px) saturate(150%);
+    -webkit-backdrop-filter: blur(20px) saturate(150%);
+    border: 1px solid var(--line-2);
+    border-radius: 999px;
+    padding: 10px 12px 10px 22px;
+    display: flex; align-items: center; justify-content: space-between;
+    box-shadow: 0 12px 40px rgba(0,0,0,0.4);
+  }
+  .brand {
+    display: flex; align-items: center; gap: 10px;
+    font-weight: 600; letter-spacing: -0.01em;
+  }
+  .brand .mark {
+    width: 28px; height: 28px;
+    border-radius: 8px;
+    background: linear-gradient(135deg, var(--teal) 0%, var(--violet) 100%);
+    display: grid; place-items: center;
+    font-size: 0.95em; color: #0a0a0f;
+    font-weight: 800;
+    box-shadow: 0 0 16px rgba(126,231,209,0.4);
+  }
+  .brand .name { font-size: 0.98em; }
+  .brand .ver {
+    font-size: 0.68em; padding: 3px 9px; border-radius: 999px;
+    background: var(--bg-3); color: var(--fg-3);
+    letter-spacing: 0.04em;
+    margin-left: 4px;
+  }
+  .nav-links { display: flex; align-items: center; gap: 4px; }
+  .nav-links a {
+    color: var(--fg-2);
+    padding: 8px 14px;
+    font-size: 0.92em;
+    font-weight: 500;
+    border-radius: 999px;
+    transition: color 0.15s, background 0.15s;
+  }
+  .nav-links a:hover { color: var(--fg); background: var(--bg-3); }
+  .nav-links .cta {
+    background: var(--fg);
+    color: var(--bg) !important;
+    font-weight: 600;
+  }
+  .nav-links .cta:hover { background: var(--teal); }
+  @media (max-width: 760px) {
+    .nav-links a:not(.cta) { display: none; }
+  }
+
+  /* ───────────── HERO ───────────── */
+  .hero {
+    padding: 100px 28px 80px;
+    position: relative;
+    overflow: hidden;
+  }
+  .hero-grid {
+    max-width: 1280px; margin: 0 auto;
+    display: grid; grid-template-columns: 1.1fr 1fr; gap: 60px;
+    align-items: center;
+  }
+  @media (max-width: 1024px) {
+    .hero-grid { grid-template-columns: 1fr; gap: 50px; }
+  }
+
+  .eyebrow {
+    display: inline-flex; align-items: center; gap: 10px;
+    padding: 6px 14px 6px 8px;
+    background: rgba(255,255,255,0.04);
+    border: 1px solid var(--line-2);
+    border-radius: 999px;
+    color: var(--fg-2);
+    font-size: 0.84em;
+    font-weight: 500;
+    margin-bottom: 28px;
+  }
+  .eyebrow .pulse {
+    width: 8px; height: 8px; border-radius: 50%;
+    background: var(--teal);
+    box-shadow: 0 0 12px var(--teal);
+    animation: pulse 2.4s ease-in-out infinite;
+  }
+  .eyebrow .pulse::before {
+    content: ""; position: absolute;
+    width: 8px; height: 8px; border-radius: 50%;
+    background: var(--teal);
+    animation: ping 2.4s ease-out infinite;
+  }
+  @keyframes pulse { 50% { opacity: 0.7; } }
+  @keyframes ping  { 0% { transform: scale(1); opacity: 0.6; } 100% { transform: scale(3); opacity: 0; } }
+  .eyebrow .tag {
+    background: var(--teal);
+    color: #000; padding: 2px 8px;
+    border-radius: 999px;
+    font-weight: 700; font-size: 0.78em;
+    letter-spacing: 0.02em;
+  }
+
+  h1.display {
+    font-family: 'Geist', 'Inter', sans-serif;
+    font-size: clamp(2.6rem, 6vw, 5.2rem);
+    font-weight: 700;
+    line-height: 0.98;
+    letter-spacing: -0.045em;
+    margin-bottom: 26px;
+  }
+  h1.display .grad {
+    background: linear-gradient(135deg, #f4f4f7 0%, #7ee7d1 40%, #a78bfa 90%);
+    -webkit-background-clip: text;
+    background-clip: text;
+    -webkit-text-fill-color: transparent;
+  }
+  h1.display .strike {
+    color: var(--fg-3);
+    text-decoration: line-through;
+    text-decoration-color: var(--red);
+    text-decoration-thickness: 5px;
+  }
+
+  .hero p.lead {
+    font-size: 1.18em;
+    color: var(--fg-2);
+    max-width: 540px;
+    line-height: 1.55;
+    margin-bottom: 36px;
+  }
+  .actions {
+    display: flex; flex-wrap: wrap; gap: 12px;
+    margin-bottom: 28px;
+  }
+
+  .btn {
+    position: relative;
+    display: inline-flex; align-items: center; gap: 10px;
+    padding: 14px 22px;
+    border-radius: 12px;
+    font-size: 0.98em;
+    font-weight: 600;
+    letter-spacing: -0.005em;
+    border: 1px solid transparent;
+    cursor: pointer;
+    transition: transform 0.15s, box-shadow 0.2s, background 0.2s;
+    font-family: inherit;
+  }
+  .btn-primary {
+    background: linear-gradient(180deg, #ffffff 0%, #e2e2eb 100%);
+    color: #000;
+    box-shadow:
+      0 1px 0 rgba(255,255,255,0.5) inset,
+      0 6px 24px rgba(255,255,255,0.12),
+      0 0 0 1px rgba(255,255,255,0.06);
+  }
+  .btn-primary:hover {
+    transform: translateY(-1px);
+    box-shadow:
+      0 1px 0 rgba(255,255,255,0.5) inset,
+      0 10px 36px rgba(255,255,255,0.18),
+      0 0 0 1px rgba(126,231,209,0.4),
+      0 0 36px rgba(126,231,209,0.3);
+  }
+  .btn-ghost {
+    background: rgba(255,255,255,0.03);
+    color: var(--fg);
+    border-color: var(--line-2);
+    backdrop-filter: blur(10px);
+  }
+  .btn-ghost:hover {
+    background: rgba(255,255,255,0.06);
+    border-color: var(--line-2);
+    transform: translateY(-1px);
+  }
+  .btn .small { font-weight: 400; opacity: 0.55; font-size: 0.85em; }
+
+  .hero-meta {
+    display: flex; gap: 28px; flex-wrap: wrap;
+    color: var(--fg-3);
+    font-size: 0.88em;
+  }
+  .hero-meta .item { display: flex; align-items: center; gap: 8px; }
+  .hero-meta strong { color: var(--fg); font-weight: 600; }
+  .hero-meta .item::before {
+    content: ""; width: 4px; height: 4px;
+    background: var(--teal); border-radius: 50%;
+  }
+
+  /* ───── Hero terminal — animated ───── */
+  .term-card {
+    background:
+      linear-gradient(180deg, rgba(255,255,255,0.04), transparent 30%),
+      var(--bg-card);
+    border: 1px solid var(--line-2);
+    border-radius: var(--r-lg);
+    box-shadow:
+      0 30px 80px rgba(0,0,0,0.5),
+      0 0 0 1px var(--line),
+      var(--glow-teal);
+    overflow: hidden;
+    position: relative;
+  }
+  .term-card::before {
+    content: ""; position: absolute; top: 0; left: 0; right: 0; height: 1px;
+    background: linear-gradient(90deg, transparent, rgba(126,231,209,0.5), transparent);
+  }
+  .term-head {
+    padding: 14px 18px;
+    border-bottom: 1px solid var(--line);
+    display: flex; align-items: center; gap: 10px;
+  }
+  .term-head .dot {
+    width: 12px; height: 12px; border-radius: 50%;
+  }
+  .term-head .dot:nth-child(1) { background: #ff5f56; }
+  .term-head .dot:nth-child(2) { background: #ffbd2e; }
+  .term-head .dot:nth-child(3) { background: #27c93f; }
+  .term-head .name {
+    margin-left: 14px; color: var(--fg-3);
+    font-size: 0.86em;
+    font-family: 'JetBrains Mono', monospace;
+  }
+  .term-body {
+    padding: 22px 24px;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 0.87em;
+    line-height: 1.7;
+    color: var(--fg-2);
+    min-height: 350px;
+  }
+  .term-body .row { animation: fade-in 0.5s ease-out both; }
+  .term-body .row:nth-child(1)  { animation-delay: 0.0s; }
+  .term-body .row:nth-child(2)  { animation-delay: 0.1s; }
+  .term-body .row:nth-child(3)  { animation-delay: 0.3s; }
+  .term-body .row:nth-child(4)  { animation-delay: 0.6s; }
+  .term-body .row:nth-child(5)  { animation-delay: 0.9s; }
+  .term-body .row:nth-child(6)  { animation-delay: 1.2s; }
+  .term-body .row:nth-child(7)  { animation-delay: 1.5s; }
+  .term-body .row:nth-child(8)  { animation-delay: 1.8s; }
+  .term-body .row:nth-child(9)  { animation-delay: 2.1s; }
+  .term-body .row:nth-child(10) { animation-delay: 2.4s; }
+  .term-body .row:nth-child(11) { animation-delay: 2.7s; }
+  @keyframes fade-in { from { opacity: 0; transform: translateY(4px); } to { opacity: 1; transform: none; } }
+
+  .term-body .green  { color: var(--teal); }
+  .term-body .red    { color: var(--red); font-weight: 600; }
+  .term-body .yellow { color: var(--gold); font-weight: 600; }
+  .term-body .dim    { color: var(--fg-4); }
+  .term-body .arrow  { color: var(--teal); }
+  .term-body .caret::after {
+    content: "▌"; color: var(--teal);
+    animation: blink 1s steps(1) infinite;
+  }
+  @keyframes blink { 50% { opacity: 0; } }
+
+  /* ───────── SECTIONS ───────── */
+  section { padding: 100px 0; position: relative; }
+  @media (max-width: 760px) { section { padding: 70px 0; } }
+
+  .section-label {
+    color: var(--fg-3);
+    font-size: 0.78em;
+    font-weight: 600;
+    letter-spacing: 0.16em;
+    text-transform: uppercase;
+    margin-bottom: 14px;
+    display: inline-block;
+  }
+  .section-label::before {
+    content: ""; display: inline-block;
+    width: 18px; height: 1px;
+    background: var(--teal);
+    vertical-align: middle;
+    margin-right: 10px;
+  }
+  h2 {
+    font-family: 'Geist', 'Inter', sans-serif;
+    font-size: clamp(2rem, 4vw, 3.6rem);
+    font-weight: 700;
+    line-height: 1.05;
+    letter-spacing: -0.035em;
+    margin-bottom: 18px;
+    max-width: 18ch;
+  }
+  h2 .grad {
+    background: linear-gradient(135deg, #f4f4f7 0%, #a78bfa 100%);
+    -webkit-background-clip: text;
+    background-clip: text;
+    -webkit-text-fill-color: transparent;
+  }
+  .section-lede {
+    color: var(--fg-2);
+    font-size: 1.12em;
+    max-width: 640px;
+    line-height: 1.6;
+  }
+
+  /* ───────── MARQUEE — trusted by / detections ───────── */
+  .marquee-section {
+    padding: 50px 0;
+    border-top: 1px solid var(--line);
+    border-bottom: 1px solid var(--line);
+    background: rgba(0,0,0,0.2);
+  }
+  .marquee-label {
+    text-align: center;
+    color: var(--fg-3);
+    font-size: 0.82em;
+    letter-spacing: 0.16em;
+    text-transform: uppercase;
+    margin-bottom: 24px;
+  }
+  .marquee {
+    overflow: hidden;
+    mask-image: linear-gradient(90deg, transparent, #000 12%, #000 88%, transparent);
+    -webkit-mask-image: linear-gradient(90deg, transparent, #000 12%, #000 88%, transparent);
+  }
+  .marquee-track {
+    display: flex; gap: 36px;
+    animation: marquee 40s linear infinite;
+    width: max-content;
+  }
+  .marquee-item {
+    display: flex; align-items: center; gap: 10px;
+    padding: 10px 18px;
+    background: var(--bg-2);
+    border: 1px solid var(--line);
+    border-radius: 999px;
+    color: var(--fg-2);
+    font-size: 0.92em;
+    font-family: 'JetBrains Mono', monospace;
+    white-space: nowrap;
+  }
+  .marquee-item .dot { width: 6px; height: 6px; border-radius: 50%; background: var(--teal); }
+  @keyframes marquee { from { transform: translateX(0); } to { transform: translateX(-50%); } }
+
+  /* ───────── BENTO ───────── */
+  .bento {
+    display: grid;
+    grid-template-columns: repeat(6, 1fr);
+    grid-auto-rows: minmax(220px, auto);
+    gap: 14px;
+    margin-top: 60px;
+  }
+  @media (max-width: 1024px) { .bento { grid-template-columns: repeat(2, 1fr); } }
+
+  .tile {
+    background:
+      linear-gradient(180deg, rgba(255,255,255,0.025), transparent 40%),
+      var(--bg-card);
+    border: 1px solid var(--line-2);
+    border-radius: var(--r-lg);
+    padding: 28px;
+    position: relative;
+    overflow: hidden;
+    transition: transform 0.2s, border-color 0.2s, box-shadow 0.3s;
+  }
+  .tile:hover {
+    transform: translateY(-3px);
+    border-color: rgba(126,231,209,0.25);
+    box-shadow:
+      0 20px 60px rgba(0,0,0,0.3),
+      0 0 0 1px rgba(126,231,209,0.15),
+      0 0 40px rgba(126,231,209,0.08);
+  }
+  .tile h3 {
+    font-size: 1.22em;
+    font-weight: 600;
+    letter-spacing: -0.015em;
+    margin-bottom: 8px;
+    line-height: 1.2;
+  }
+  .tile p { color: var(--fg-3); font-size: 0.94em; line-height: 1.55; }
+  .tile .ico-wrap {
+    width: 44px; height: 44px;
+    border-radius: 10px;
+    background: linear-gradient(135deg, rgba(126,231,209,0.15), rgba(167,139,250,0.08));
+    border: 1px solid var(--line-2);
+    display: grid; place-items: center;
+    font-size: 1.35em;
+    margin-bottom: 16px;
+  }
+  .tile .arr {
+    position: absolute; right: 22px; top: 22px;
+    color: var(--fg-4); font-size: 0.78em;
+    font-family: 'JetBrains Mono', monospace;
+  }
+
+  /* tile spans */
+  .tile.x2 { grid-column: span 2; }
+  .tile.x3 { grid-column: span 3; }
+  .tile.x4 { grid-column: span 4; }
+  .tile.x6 { grid-column: span 6; }
+  .tile.y2 { grid-row: span 2; }
+  @media (max-width: 1024px) {
+    .tile.x2, .tile.x3, .tile.x4, .tile.x6 { grid-column: span 2; }
+    .tile.y2 { grid-row: span 1; }
+  }
+
+  /* Tile variants */
+  .tile.hero-tile {
+    grid-column: span 4;
+    grid-row: span 2;
+    padding: 36px;
+    background:
+      radial-gradient(circle at 100% 0%, rgba(126,231,209,0.1), transparent 50%),
+      radial-gradient(circle at 0% 100%, rgba(167,139,250,0.06), transparent 60%),
+      var(--bg-card);
+    display: flex; flex-direction: column; justify-content: space-between;
+  }
+  .tile.hero-tile h3 { font-size: 2em; letter-spacing: -0.025em; max-width: 12ch; line-height: 1.05; }
+  .tile.hero-tile h3 .grad {
+    background: linear-gradient(135deg, #ffffff 0%, #7ee7d1 100%);
+    -webkit-background-clip: text;
+    background-clip: text;
+    -webkit-text-fill-color: transparent;
+  }
+  .tile.hero-tile p { font-size: 1.04em; max-width: 50ch; margin-top: 14px; }
+  .tile-tags { display: flex; gap: 8px; flex-wrap: wrap; margin-top: auto; padding-top: 24px; }
+  .tile-tag {
+    padding: 6px 12px;
+    background: rgba(255,255,255,0.04);
+    border: 1px solid var(--line-2);
+    border-radius: 999px;
+    font-size: 0.82em;
+    color: var(--fg-2);
+    font-family: 'JetBrains Mono', monospace;
+  }
+  .tile-tag.accent {
+    background: rgba(126,231,209,0.1);
+    border-color: rgba(126,231,209,0.3);
+    color: var(--teal);
+  }
+
+  /* ───────── SHOWCASES — split with mockup ───────── */
+  .showcase {
+    display: grid; grid-template-columns: 1fr 1fr; gap: 60px;
+    align-items: center;
+  }
+  .showcase.rev { direction: rtl; }
+  .showcase.rev > * { direction: ltr; }
+  @media (max-width: 1024px) {
+    .showcase, .showcase.rev { grid-template-columns: 1fr; gap: 40px; direction: ltr; }
+  }
+  .showcase + .showcase { margin-top: 100px; }
+  .sc-text h3 {
+    font-family: 'Geist', sans-serif;
+    font-size: 2em; font-weight: 700;
+    letter-spacing: -0.025em; line-height: 1.1;
+    margin-bottom: 16px;
+  }
+  .sc-text p { color: var(--fg-2); font-size: 1.04em; max-width: 50ch; }
+  .sc-text ul { list-style: none; margin-top: 24px; }
+  .sc-text li {
+    padding: 12px 0;
+    color: var(--fg-2);
+    font-size: 0.96em;
+    display: flex; gap: 14px; align-items: flex-start;
+    border-bottom: 1px solid var(--line);
+  }
+  .sc-text li:last-child { border-bottom: none; }
+  .sc-text li::before {
+    content: ""; flex-shrink: 0;
+    width: 18px; height: 18px;
+    border-radius: 50%;
+    background: linear-gradient(135deg, var(--teal), var(--violet));
+    display: grid; place-items: center;
+    font-size: 0.7em; color: #000;
+    margin-top: 2px;
+  }
+  .sc-text li::before { content: "✓"; padding-top: 0; line-height: 18px; }
+
+  .mockup {
+    background:
+      linear-gradient(180deg, rgba(255,255,255,0.04), transparent 30%),
+      var(--bg-card);
+    border: 1px solid var(--line-2);
+    border-radius: var(--r-lg);
+    box-shadow: 0 30px 80px rgba(0,0,0,0.5), 0 0 0 1px var(--line);
+    overflow: hidden;
+  }
+  .mockup-bar {
+    padding: 12px 16px;
+    border-bottom: 1px solid var(--line);
+    display: flex; gap: 8px;
+  }
+  .mockup-bar div { width: 11px; height: 11px; border-radius: 50%; background: #444; }
+  .mockup-bar div:nth-child(1) { background: #ff5f56; }
+  .mockup-bar div:nth-child(2) { background: #ffbd2e; }
+  .mockup-bar div:nth-child(3) { background: #27c93f; }
+
+  /* Health Check mockup */
+  .mock-health { padding: 38px 32px; }
+  .mock-hero { display: grid; grid-template-columns: auto 1fr; gap: 28px; align-items: center; }
+  .gauge {
+    width: 170px; height: 170px; border-radius: 50%;
+    border: 12px solid var(--orange);
+    display: flex; flex-direction: column; align-items: center; justify-content: center;
+    box-shadow: 0 0 60px rgba(255,138,91,0.3);
+    position: relative;
+  }
+  .gauge::before {
+    content: ""; position: absolute; inset: -12px;
+    border: 1px dashed var(--orange);
+    border-radius: 50%;
+    opacity: 0.3;
+  }
+  .gauge .n { font-size: 3.4em; font-weight: 800; color: var(--orange); line-height: 1; font-family: 'Geist', sans-serif; letter-spacing: -0.04em; }
+  .gauge .g { font-size: 0.78em; color: var(--fg-3); margin-top: 6px; letter-spacing: 0.05em; }
+  .mock-hero h4 { font-size: 1.5em; font-weight: 600; letter-spacing: -0.02em; margin-bottom: 6px; }
+  .mock-hero p { color: var(--fg-3); font-size: 0.94em; line-height: 1.5; }
+  .mock-hero .delta { color: var(--orange); font-weight: 600; font-size: 0.9em; margin-top: 12px; }
+  .mock-row { display: flex; gap: 8px; margin-top: 20px; flex-wrap: wrap; }
+  .mock-chip {
+    padding: 6px 12px; font-size: 0.8em; font-weight: 500;
+    border-radius: 8px;
+    background: var(--bg-2);
+    border: 1px solid var(--line);
+    color: var(--fg-2);
+  }
+  .mock-chip strong { color: var(--fg); }
+
+  /* Finding card mockup */
+  .mock-find { padding: 24px; }
+  .find-card {
+    background: var(--bg-2);
+    border: 1px solid var(--line);
+    border-radius: var(--r-md);
+    overflow: hidden;
+  }
+  .find-card .strip {
+    height: 3px;
+    background: linear-gradient(90deg, var(--orange), var(--gold));
+  }
+  .find-card .inner { padding: 22px 24px; }
+  .find-card .badges { display: flex; gap: 6px; flex-wrap: wrap; align-items: center; margin-bottom: 16px; }
+  .find-pill {
+    padding: 4px 10px; font-size: 0.74em; font-weight: 700;
+    border-radius: 6px;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+  }
+  .find-pill.high { background: var(--orange); color: #000; }
+  .find-pill.cat { background: transparent; color: var(--violet); border: 1px solid rgba(167,139,250,0.3); }
+  .find-mitre { margin-left: auto; color: var(--fg-3); font-family: monospace; font-size: 0.82em; }
+  .find-card h5 { font-size: 1.16em; font-weight: 600; line-height: 1.3; margin-bottom: 14px; letter-spacing: -0.01em; }
+  .find-label {
+    color: var(--fg-3); font-size: 0.74em;
+    letter-spacing: 0.12em; text-transform: uppercase;
+    font-weight: 700; margin-bottom: 4px;
+  }
+  .find-label.green { color: var(--teal); }
+  .find-text { color: var(--fg-2); font-size: 0.92em; line-height: 1.55; margin-bottom: 14px; }
+  .find-actions { display: flex; gap: 6px; flex-wrap: wrap; margin-top: 18px; padding-top: 18px; border-top: 1px solid var(--line); }
+  .find-btn {
+    padding: 6px 12px; font-size: 0.82em; font-weight: 500;
+    border-radius: 6px;
+    background: var(--bg-3);
+    color: var(--fg-2);
+    border: 1px solid var(--line);
+  }
+  .find-btn.primary { background: var(--fg); color: var(--bg); border-color: var(--fg); font-weight: 600; }
+
+  /* ───────── STATS STRIP ───────── */
+  .stats {
+    display: grid; grid-template-columns: repeat(4, 1fr); gap: 0;
+    margin-top: 70px;
+    border-top: 1px solid var(--line);
+    border-bottom: 1px solid var(--line);
+  }
+  @media (max-width: 760px) { .stats { grid-template-columns: repeat(2, 1fr); } }
+  .stat {
+    padding: 36px 32px;
+    border-right: 1px solid var(--line);
+  }
+  .stat:last-child { border-right: none; }
+  @media (max-width: 760px) {
+    .stat:nth-child(2) { border-right: none; }
+    .stat:nth-child(1), .stat:nth-child(2) { border-bottom: 1px solid var(--line); }
+  }
+  .stat .num {
+    font-size: 3em;
+    font-weight: 700;
+    letter-spacing: -0.04em;
+    line-height: 1;
+    font-family: 'Geist', sans-serif;
+    background: linear-gradient(135deg, var(--teal) 0%, var(--violet) 100%);
+    -webkit-background-clip: text;
+    background-clip: text;
+    -webkit-text-fill-color: transparent;
+  }
+  .stat .label { color: var(--fg-3); font-size: 0.92em; margin-top: 8px; }
+
+  /* ───────── COMPARE TABLE ───────── */
+  .compare {
+    margin-top: 50px;
+    border: 1px solid var(--line-2);
+    border-radius: var(--r-lg);
+    overflow: hidden;
+    background: var(--bg-card);
+  }
+  .compare table { width: 100%; border-collapse: collapse; }
+  .compare th, .compare td {
+    padding: 18px 22px;
+    text-align: left;
+    border-bottom: 1px solid var(--line);
+    font-size: 0.94em;
+  }
+  .compare thead th {
+    background: rgba(255,255,255,0.02);
+    color: var(--fg-3);
+    font-size: 0.78em;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    font-weight: 600;
+  }
+  .compare thead th.us {
+    color: var(--teal);
+    background: rgba(126,231,209,0.08);
+    position: relative;
+  }
+  .compare thead th.us::after {
+    content: ""; position: absolute; left: 0; right: 0; bottom: -1px; height: 2px;
+    background: var(--teal);
+  }
+  .compare tbody tr:last-child td { border-bottom: none; }
+  .compare tbody tr:hover td { background: rgba(255,255,255,0.02); }
+  .compare .row-h { font-weight: 600; color: var(--fg); }
+  .compare .yes { color: var(--teal); font-weight: 600; }
+  .compare .no { color: var(--fg-4); }
+  .compare .meh { color: var(--gold); }
+  .compare .us-cell {
+    background: rgba(126,231,209,0.03);
+    border-left: 1px solid rgba(126,231,209,0.2);
+    border-right: 1px solid rgba(126,231,209,0.2);
+  }
+
+  /* ───────── PRICING ───────── */
+  .pricing {
+    display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px;
+    margin-top: 56px;
+  }
+  @media (max-width: 940px) { .pricing { grid-template-columns: 1fr; } }
+  .price {
+    background:
+      linear-gradient(180deg, rgba(255,255,255,0.03), transparent 30%),
+      var(--bg-card);
+    border: 1px solid var(--line-2);
+    border-radius: var(--r-lg);
+    padding: 36px 28px;
+    position: relative;
+    transition: transform 0.2s, border-color 0.2s, box-shadow 0.3s;
+  }
+  .price:hover { transform: translateY(-4px); }
+  .price.feat {
+    border: 1px solid rgba(126,231,209,0.4);
+    background:
+      radial-gradient(circle at 100% 0%, rgba(126,231,209,0.1), transparent 50%),
+      linear-gradient(180deg, rgba(255,255,255,0.03), transparent 30%),
+      var(--bg-card);
+    box-shadow:
+      0 0 0 1px rgba(126,231,209,0.2),
+      0 20px 60px rgba(0,0,0,0.4),
+      0 0 60px rgba(126,231,209,0.1);
+  }
+  .price.feat::before {
+    content: "MOST POPULAR";
+    position: absolute; top: -10px; left: 24px;
+    background: var(--teal); color: #000;
+    padding: 4px 14px; border-radius: 999px;
+    font-size: 0.7em; font-weight: 700; letter-spacing: 0.12em;
+    box-shadow: 0 4px 18px rgba(126,231,209,0.5);
+  }
+  .price h3 { font-size: 1.3em; font-weight: 600; letter-spacing: -0.01em; margin-bottom: 6px; }
+  .price .desc { color: var(--fg-3); font-size: 0.92em; margin-bottom: 24px; }
+  .price .amount {
+    font-size: 3.2em;
+    font-weight: 700;
+    line-height: 1;
+    letter-spacing: -0.04em;
+    font-family: 'Geist', sans-serif;
+  }
+  .price .amount .small { font-size: 0.38em; color: var(--fg-3); font-weight: 500; }
+  .price .note { color: var(--fg-3); font-size: 0.86em; margin-top: 6px; margin-bottom: 28px; }
+  .price ul { list-style: none; margin-bottom: 28px; min-height: 240px; }
+  .price li { padding: 8px 0; color: var(--fg-2); font-size: 0.93em; display: flex; gap: 10px; }
+  .price li::before {
+    content: ""; flex-shrink: 0;
+    width: 14px; height: 14px; border-radius: 50%;
+    background: rgba(126,231,209,0.15);
+    border: 1px solid rgba(126,231,209,0.4);
+    display: grid; place-items: center;
+    color: var(--teal); font-size: 0.66em; font-weight: 700;
+    line-height: 14px;
+    margin-top: 4px;
+  }
+  .price li::before { content: "✓"; }
+  .price .btn { width: 100%; justify-content: center; }
+
+  /* ───────── FAQ ───────── */
+  details {
+    background: var(--bg-card);
+    border: 1px solid var(--line-2);
+    border-radius: var(--r-md);
+    padding: 22px 26px;
+    margin-bottom: 12px;
+    transition: border-color 0.2s, background 0.2s;
+  }
+  details[open] { border-color: rgba(126,231,209,0.3); }
+  details summary {
+    cursor: pointer; font-weight: 600; font-size: 1em;
+    list-style: none;
+    display: flex; justify-content: space-between; align-items: center;
+    color: var(--fg);
+    letter-spacing: -0.005em;
+  }
+  details summary::-webkit-details-marker { display: none; }
+  details summary::after {
+    content: "+"; color: var(--teal); font-size: 1.5em;
+    font-weight: 300;
+    transition: transform 0.2s;
+    width: 24px; height: 24px;
+    display: grid; place-items: center;
+    border-radius: 50%;
+    background: rgba(126,231,209,0.1);
+    line-height: 1;
+  }
+  details[open] summary::after { content: "−"; }
+  details p {
+    margin-top: 14px;
+    color: var(--fg-2);
+    line-height: 1.7;
+  }
+  details p code {
+    background: var(--bg-2); padding: 2px 7px;
+    border-radius: 4px; font-size: 0.86em;
+    color: var(--teal);
+  }
+
+  /* ───────── CTA STRIP ───────── */
+  .cta-card {
+    text-align: center;
+    background:
+      radial-gradient(circle at 50% 0%, rgba(126,231,209,0.18), transparent 60%),
+      radial-gradient(circle at 50% 100%, rgba(167,139,250,0.12), transparent 60%),
+      var(--bg-card);
+    border: 1px solid rgba(126,231,209,0.3);
+    border-radius: var(--r-xl);
+    padding: 70px 40px;
+    margin-top: 50px;
+    box-shadow:
+      0 0 0 1px rgba(126,231,209,0.1),
+      0 30px 80px rgba(0,0,0,0.4);
+    position: relative;
+    overflow: hidden;
+  }
+  .cta-card::before {
+    content: ""; position: absolute; top: 0; left: 50%;
+    width: 60%; height: 2px; transform: translateX(-50%);
+    background: linear-gradient(90deg, transparent, var(--teal), transparent);
+  }
+  .cta-card h2 {
+    font-size: clamp(2rem, 4vw, 3rem);
+    margin: 0 auto 14px;
+  }
+  .cta-card p {
+    color: var(--fg-2); margin-bottom: 32px;
+    max-width: 580px; margin-left: auto; margin-right: auto;
+    font-size: 1.05em;
+  }
+  .cta-card .actions { justify-content: center; }
+  .cta-card .small {
+    color: var(--fg-3); margin-top: 26px; font-size: 0.86em;
+  }
+
+  /* ───────── FOUNDER ───────── */
+  .founder-card {
+    background:
+      linear-gradient(135deg, rgba(126,231,209,0.04), transparent 60%),
+      var(--bg-card);
+    border: 1px solid var(--line-2);
+    border-radius: var(--r-xl);
+    padding: 56px 50px;
+    max-width: 820px;
+    margin: 50px auto 0;
+    position: relative;
+  }
+  .quote-mark {
+    font-family: Georgia, serif;
+    font-size: 5em; line-height: 0.8;
+    background: linear-gradient(135deg, var(--teal), var(--violet));
+    -webkit-background-clip: text;
+    background-clip: text;
+    -webkit-text-fill-color: transparent;
+    margin-bottom: 18px;
+  }
+  .founder-card p {
+    font-size: 1.1em; color: var(--fg);
+    line-height: 1.7; margin-bottom: 14px;
+  }
+  .founder-card p code { background: var(--bg-2); padding: 2px 7px; border-radius: 4px; color: var(--teal); }
+  .founder-sig {
+    margin-top: 28px; padding-top: 24px;
+    border-top: 1px solid var(--line);
+    display: flex; align-items: center; gap: 14px;
+  }
+  .founder-avatar {
+    width: 44px; height: 44px; border-radius: 50%;
+    background: linear-gradient(135deg, var(--teal), var(--violet));
+    display: grid; place-items: center;
+    font-weight: 700; color: #000; font-size: 1em;
+  }
+  .founder-sig .who strong { color: var(--fg); display: block; font-weight: 600; }
+  .founder-sig .who .role { color: var(--fg-3); font-size: 0.88em; }
+
+  /* ───────── HONEST LIMITS ───────── */
+  .limits {
+    background: var(--bg-card);
+    border: 1px solid var(--line-2);
+    border-radius: var(--r-lg);
+    padding: 40px 38px;
+    margin-top: 36px;
+  }
+  .limits h3 { font-size: 1.3em; margin-bottom: 16px; font-weight: 600; }
+  .limits ul { list-style: none; margin-top: 14px; }
+  .limits li {
+    padding: 14px 0;
+    color: var(--fg-2);
+    border-bottom: 1px solid var(--line);
+    display: flex; gap: 14px;
+  }
+  .limits li:last-child { border-bottom: none; }
+  .limits li::before {
+    content: "—"; color: var(--red); flex-shrink: 0; font-weight: 800;
+  }
+  .limits li strong { color: var(--fg); margin-right: 4px; }
+
+  /* ───────── FOOTER ───────── */
+  footer {
+    border-top: 1px solid var(--line);
+    padding: 50px 28px;
+    margin-top: 60px;
+  }
+  footer .inner {
+    max-width: 1280px; margin: 0 auto;
+    display: flex; justify-content: space-between; align-items: center;
+    flex-wrap: wrap; gap: 20px;
+    color: var(--fg-3);
+    font-size: 0.9em;
+  }
+  footer a { color: var(--fg-2); }
+  footer a:hover { color: var(--fg); }
+
+  /* ───────── Reveal on scroll (CSS-only with @starting-style fallback) ───────── */
+  .reveal {
+    opacity: 1;
+    transform: none;
+  }
+
+  /* split2 — keep for comparison */
+  .split2 { display: grid; grid-template-columns: 1fr 1fr; gap: 18px; margin-top: 36px; }
+  @media (max-width: 760px) { .split2 { grid-template-columns: 1fr; } }
+  .col-bad, .col-good {
+    background: var(--bg-card);
+    border: 1px solid var(--line-2);
+    border-radius: var(--r-lg);
+    padding: 32px 30px;
+    position: relative;
+    overflow: hidden;
+  }
+  .col-bad::before, .col-good::before {
+    content: ""; position: absolute; top: 0; left: 0; right: 0; height: 3px;
+  }
+  .col-bad::before { background: linear-gradient(90deg, var(--red), var(--orange)); }
+  .col-good::before { background: linear-gradient(90deg, var(--teal), var(--violet)); }
+  .col-bad h3 { color: var(--red); font-size: 1.2em; margin-bottom: 8px; font-weight: 600; }
+  .col-good h3 { color: var(--teal); font-size: 1.2em; margin-bottom: 8px; font-weight: 600; }
+  .col-bad ul, .col-good ul { list-style: none; margin-top: 14px; }
+  .col-bad li, .col-good li {
+    padding: 11px 0; color: var(--fg-2); font-size: 0.94em;
+    border-bottom: 1px solid var(--line);
+    display: flex; gap: 12px; line-height: 1.5;
+  }
+  .col-bad li:last-child, .col-good li:last-child { border: 0; }
+  .col-bad li::before { content: "✗"; color: var(--red); font-weight: 800; flex-shrink: 0; }
+  .col-good li::before { content: "✓"; color: var(--teal); font-weight: 800; flex-shrink: 0; }
+
+</style>
+</head>
+<body>
+
+<!-- ═════════════ NAV ═════════════ -->
+<nav>
+  <div class="nav-inner">
+    <a href="#" class="brand">
+      <div class="mark">🛡</div>
+      <span class="name">Log Sentinel</span>
+      <span class="ver">v1.0</span>
+    </a>
+    <div class="nav-links">
+      <a href="#how">How it works</a>
+      <a href="#features">Features</a>
+      <a href="#compare">Compare</a>
+      <a href="#pricing">Pricing</a>
+      <a href="#download" class="cta">Download</a>
+    </div>
+  </div>
+</nav>
+
+<!-- ═════════════ HERO ═════════════ -->
+<section class="hero">
+  <div class="hero-grid">
+    <div>
+      <div class="eyebrow">
+        <span class="tag">NEW</span>
+        <span>Live Mode catches threats in &lt; 2 seconds</span>
+      </div>
+
+      <h1 class="display">
+        Your antivirus is<br>
+        <span class="strike">enough.</span><br>
+        <span class="grad">Now you need eyes.</span>
+      </h1>
+
+      <p class="lead">
+        A single 32 MB Windows app that watches what your PC actually does — every process, every connection, every persistence trick — then explains it in plain English and lets you fix it with one click.
+      </p>
+
+      <div class="actions">
+        <a href="#download" class="btn btn-primary">
+          ⬇  Download for Windows
+          <span class="small">32 MB</span>
+        </a>
+        <a href="#how" class="btn btn-ghost">See it live →</a>
+      </div>
+
+      <div class="hero-meta">
+        <div class="item"><strong>90s</strong> first scan</div>
+        <div class="item"><strong>0 packets</strong> sent unless you ask</div>
+        <div class="item"><strong>Single .exe</strong>, no installer</div>
+      </div>
+    </div>
+
+    <!-- Animated terminal demo -->
+    <div class="term-card">
+      <div class="term-head">
+        <div class="dot"></div>
+        <div class="dot"></div>
+        <div class="dot"></div>
+        <div class="name">Log Sentinel — Live Mode</div>
+      </div>
+      <div class="term-body">
+        <div class="row"><span class="green">▶</span> live mode armed · polling every 2.0s</div>
+        <div class="row dim">────────────────────────────────────────</div>
+        <div class="row">14:32:18  <span class="dim">process</span>  curl.exe   <span class="arrow">→</span> <span class="dim">PID 8472</span></div>
+        <div class="row">          <span class="dim">cmdline:</span> curl https://example.com</div>
+        <div class="row">14:32:18  <span class="dim">net_new</span>  <span class="arrow">→</span> 93.184.216.34:443 <span class="dim">(curl.exe)</span></div>
+        <div class="row">          <span class="dim">geo:</span> 🇺🇸 United States · <span class="dim">mitre:</span> T1071</div>
+        <div class="row dim">────────────────────────────────────────</div>
+        <div class="row">14:32:24  <span class="dim">process</span>  powershell.exe</div>
+        <div class="row">          <span class="yellow">⚠  HIGH</span>  encoded command · T1059.001</div>
+        <div class="row dim">────────────────────────────────────────</div>
+        <div class="row">14:32:31  <span class="dim">process</span>  C:\Temp\mimikatz.exe</div>
+        <div class="row"><span class="red">⚠  CRITICAL</span>  IOC match · T1003 · toast sent</div>
+        <div class="row caret">&nbsp;</div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ═════════════ MARQUEE — detections we catch ═════════════ -->
+<section class="marquee-section">
+  <div class="marquee-label">50+ behavioral detections — all mapped to MITRE ATT&amp;CK</div>
+  <div class="marquee">
+    <div class="marquee-track">
+      <span class="marquee-item"><span class="dot"></span> brute force logins · T1110</span>
+      <span class="marquee-item"><span class="dot"></span> credential dumping · T1003</span>
+      <span class="marquee-item"><span class="dot"></span> encoded powershell · T1059.001</span>
+      <span class="marquee-item"><span class="dot"></span> scheduled task abuse · T1053.005</span>
+      <span class="marquee-item"><span class="dot"></span> audit log cleared · T1070.001</span>
+      <span class="marquee-item"><span class="dot"></span> process impersonation · T1036.005</span>
+      <span class="marquee-item"><span class="dot"></span> service install · T1543.003</span>
+      <span class="marquee-item"><span class="dot"></span> registry persistence · T1547.001</span>
+      <span class="marquee-item"><span class="dot"></span> non-standard ports · T1571</span>
+      <span class="marquee-item"><span class="dot"></span> remote access tools · T1219</span>
+      <span class="marquee-item"><span class="dot"></span> firewall tampering · T1562.004</span>
+      <span class="marquee-item"><span class="dot"></span> account creation · T1136.001</span>
+      <span class="marquee-item"><span class="dot"></span> token manipulation · T1134</span>
+      <span class="marquee-item"><span class="dot"></span> account manipulation · T1098</span>
+      <!-- duplicate set for seamless loop -->
+      <span class="marquee-item"><span class="dot"></span> brute force logins · T1110</span>
+      <span class="marquee-item"><span class="dot"></span> credential dumping · T1003</span>
+      <span class="marquee-item"><span class="dot"></span> encoded powershell · T1059.001</span>
+      <span class="marquee-item"><span class="dot"></span> scheduled task abuse · T1053.005</span>
+      <span class="marquee-item"><span class="dot"></span> audit log cleared · T1070.001</span>
+      <span class="marquee-item"><span class="dot"></span> process impersonation · T1036.005</span>
+      <span class="marquee-item"><span class="dot"></span> service install · T1543.003</span>
+    </div>
+  </div>
+</section>
+
+<!-- ═════════════ HOW IT WORKS ═════════════ -->
+<section id="how">
+  <div class="wrap">
+    <span class="section-label">How it works</span>
+    <h2>Open it. Wait 90 seconds.<br><span class="grad">Read the score.</span></h2>
+    <p class="section-lede">No agent install. No cloud account. No "let's first configure data sources." A single executable that pulls every Windows telemetry source on launch and shows you a single number.</p>
+
+    <div style="margin-top: 80px;">
+
+      <!-- Showcase 1 -->
+      <div class="showcase">
+        <div class="sc-text">
+          <span class="section-label">Step 01</span>
+          <h3>One score. One verdict. One list of fixes.</h3>
+          <p>We compute a 0–100 health number from 50+ detection rules across processes, network, services, autoruns, scheduled tasks, USB history, hosts file, registry, and the Windows Event Log.</p>
+          <ul>
+            <li>14 categories rolled up to 4 user-readable: Security, Privacy, Performance, Stability</li>
+            <li>Plain-English problem text — no jargon unless you want it</li>
+            <li>Snooze, mark-fixed, or ignore each finding individually</li>
+            <li>Health score tracked across every scan in the Trends tab</li>
+          </ul>
+        </div>
+
+        <div class="mockup">
+          <div class="mockup-bar"><div></div><div></div><div></div></div>
+          <div class="mock-health">
+            <div class="mock-hero">
+              <div class="gauge">
+                <div class="n">56</div>
+                <div class="g">GRADE D</div>
+              </div>
+              <div>
+                <h4>Multiple problems found.</h4>
+                <p>Several security and stability issues need your attention before sensitive work.</p>
+                <div class="delta">↓ 2 pts vs last scan · 7 new · 6 resolved</div>
+              </div>
+            </div>
+            <div class="mock-row">
+              <span class="mock-chip"><strong>10</strong> Security</span>
+              <span class="mock-chip"><strong>16</strong> Privacy</span>
+              <span class="mock-chip"><strong>11</strong> Performance</span>
+              <span class="mock-chip"><strong>3</strong> Stability</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Showcase 2 -->
+      <div class="showcase rev">
+        <div class="sc-text">
+          <span class="section-label">Step 02</span>
+          <h3>Read. Click Fix. Move on.</h3>
+          <p>Every finding has a "Fix it" button that does the right thing — opens Task Manager focused on the bad process, kicks off a Defender scan, blocks the IP in your firewall, disables the autorun. No PowerShell copy-paste.</p>
+          <ul>
+            <li>Reversible by design — disabled autoruns are renamed, not deleted</li>
+            <li>Quick Win auto-fixes everything safe to auto-fix in one click</li>
+            <li>Open MITRE ATT&amp;CK page for any finding with one click</li>
+            <li>Pop the action list into its own full-screen window</li>
+          </ul>
+        </div>
+
+        <div class="mockup">
+          <div class="mockup-bar"><div></div><div></div><div></div></div>
+          <div class="mock-find">
+            <div class="find-card">
+              <div class="strip"></div>
+              <div class="inner">
+                <div class="badges">
+                  <span class="find-pill high">HIGH</span>
+                  <span class="find-pill cat">👁 Privacy</span>
+                  <span class="find-mitre">MITRE T1219</span>
+                </div>
+                <h5>A remote-control program is running on your PC.</h5>
+                <div class="find-label">Why it matters</div>
+                <div class="find-text">TeamViewer/AnyDesk let someone else control your computer. Useful when YOU install them. Common scam vector when you didn't.</div>
+                <div class="find-label green">What to do</div>
+                <div class="find-text">Did you install this for IT support? If yes, ignore. If not — uninstall via Settings → Apps. Change your passwords.</div>
+                <div class="find-actions">
+                  <span class="find-btn">Open Task Manager</span>
+                  <span class="find-btn">Defender Scan</span>
+                  <span class="find-btn primary">✓ Mark fixed</span>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+    </div>
+
+    <!-- Stats strip -->
+    <div class="stats">
+      <div class="stat">
+        <div class="num">50+</div>
+        <div class="label">Detection rules</div>
+      </div>
+      <div class="stat">
+        <div class="num">14</div>
+        <div class="label">Telemetry sources</div>
+      </div>
+      <div class="stat">
+        <div class="num">&lt; 2s</div>
+        <div class="label">Live detection latency</div>
+      </div>
+      <div class="stat">
+        <div class="num">0</div>
+        <div class="label">Cloud servers involved</div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ═════════════ FEATURES — BENTO ═════════════ -->
+<section id="features">
+  <div class="wrap">
+    <span class="section-label">What's inside</span>
+    <h2>14 tabs of telemetry.<br><span class="grad">1 tab you actually use.</span></h2>
+    <p class="section-lede">The Health Check tab does the work. The other 13 are there when you want to dig. Power users get depth; everyone else gets a score and a list of fixes.</p>
+
+    <div class="bento">
+
+      <div class="tile hero-tile">
+        <div>
+          <div class="ico-wrap">🏥</div>
+          <h3>The whole product, <span class="grad">on one tab</span></h3>
+          <p>Plain-English Health Check. One score. Four user-readable categories. A list of cards explaining what's wrong, why it matters, and what to do — with one-click Fix buttons. The whole product, in one place.</p>
+        </div>
+        <div class="tile-tags">
+          <span class="tile-tag accent">50+ rules</span>
+          <span class="tile-tag">MITRE-tagged</span>
+          <span class="tile-tag">Snooze / mark-fixed</span>
+          <span class="tile-tag">Plain English</span>
+        </div>
+      </div>
+
+      <div class="tile x2">
+        <span class="arr">live</span>
+        <div class="ico-wrap">⚡</div>
+        <h3>Live Mode</h3>
+        <p>Real-time process &amp; network monitoring. Toast alerts on Critical/High in under 2 seconds.</p>
+      </div>
+
+      <div class="tile x2">
+        <span class="arr">red</span>
+        <div class="ico-wrap">🚨</div>
+        <h3>Panic Button</h3>
+        <p>One click cuts every network adapter. Reversible. The killer ransomware-response feature.</p>
+      </div>
+
+      <div class="tile x2">
+        <span class="arr">netsh</span>
+        <div class="ico-wrap">🔥</div>
+        <h3>IP &amp; Website Blocker</h3>
+        <p>Block any IP, port, or whole domain in two clicks. Hosts file &amp; Windows Firewall. Reversible.</p>
+      </div>
+
+      <div class="tile x2">
+        <span class="arr">tripwire</span>
+        <div class="ico-wrap">🍯</div>
+        <h3>Honeypot Files</h3>
+        <p>Drop fake passwords.txt files. Critical alert if anything reads, modifies, or deletes them.</p>
+      </div>
+
+      <div class="tile x2">
+        <span class="arr">sha256</span>
+        <div class="ico-wrap">🔍</div>
+        <h3>File Integrity Monitor</h3>
+        <p>Hash any file, compare on every scan. Defaults watch hosts &amp; services files.</p>
+      </div>
+
+      <div class="tile x3">
+        <div class="ico-wrap">⏱</div>
+        <h3>Attack Timeline</h3>
+        <p>Every event and finding plotted on one time axis with severity swim-lanes. Click any marker to jump to the finding. Spot the moment things went wrong.</p>
+      </div>
+
+      <div class="tile x3">
+        <div class="ico-wrap">📊</div>
+        <h3>Live System Monitor</h3>
+        <p>CPU / RAM / Disk / Battery / Wi-Fi / Internet latency / Antivirus state — all updating in real time. Plus full hardware inventory.</p>
+      </div>
+
+      <div class="tile x2">
+        <div class="ico-wrap">🌐</div>
+        <h3>GeoIP</h3>
+        <p>See which countries your PC is talking to. Country flags inline.</p>
+      </div>
+
+      <div class="tile x2">
+        <div class="ico-wrap">🌳</div>
+        <h3>Process Tree</h3>
+        <p>Parent → child relationships. Catch <code>cmd.exe</code> spawned by the wrong parent.</p>
+      </div>
+
+      <div class="tile x2">
+        <div class="ico-wrap">🛠</div>
+        <h3>Custom Rules</h3>
+        <p>Write your own detections in JSON. Built-in editor. No restart needed.</p>
+      </div>
+
+      <div class="tile x2">
+        <div class="ico-wrap">⏰</div>
+        <h3>Scheduled Scans</h3>
+        <p>Windows Task Scheduler integration. Email alerts on Critical/High findings.</p>
+      </div>
+
+      <div class="tile x2">
+        <div class="ico-wrap">📈</div>
+        <h3>Health Trends</h3>
+        <p>Every scan saved. Score charted over time. Diff vs last: new / resolved / unchanged.</p>
+      </div>
+
+      <div class="tile x2">
+        <div class="ico-wrap">📄</div>
+        <h3>PDF Reports</h3>
+        <p>Polished, print-ready HTML/PDF reports. Hand to a client or your IT team.</p>
+      </div>
+
+    </div>
+  </div>
+</section>
+
+<!-- ═════════════ WHY IT EXISTS ═════════════ -->
+<section>
+  <div class="wrap">
+    <span class="section-label">Why this exists</span>
+    <h2>Antivirus tells you you're fine.<br><span style="color:var(--red)">It's lying half the time.</span></h2>
+    <p class="section-lede">Modern threats hide in normal-looking processes, normal-looking PowerShell commands, normal-looking scheduled tasks. Signature-based AV catches what's already on the bad-list. By the time it does, the damage is two days old.</p>
+
+    <div class="split2">
+      <div class="col-bad">
+        <h3>What goes wrong without it</h3>
+        <ul>
+          <li>Your account gets brute-forced overnight; you find out when you're locked out at 9am</li>
+          <li>A "free game" your kid installed mines crypto when the screen's off</li>
+          <li>A scheduled task quietly downloads new payloads at 3am every day</li>
+          <li>Your PC has been talking to a TOR exit node for a week — you never noticed</li>
+          <li>Ransomware encrypts 8,000 files in 4 minutes; AV catches it on file 8,001</li>
+          <li>You realize Task Manager hides the things you'd actually want to see</li>
+        </ul>
+      </div>
+      <div class="col-good">
+        <h3>What changes with this</h3>
+        <ul>
+          <li>Live Mode catches every new process and connection within 2 seconds</li>
+          <li>50+ behavioral detections, all mapped to MITRE ATT&amp;CK</li>
+          <li>Honeypot files trip the moment ransomware tries to encrypt them</li>
+          <li>One Panic Button cuts every network adapter — instant exfil stop</li>
+          <li>Block any IP, port, or website in two clicks; reverse it just as fast</li>
+          <li>Scheduled scans + email alerts run while you sleep</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ═════════════ COMPARE ═════════════ -->
+<section id="compare">
+  <div class="wrap">
+    <span class="section-label">Honest comparison</span>
+    <h2>How it stacks up against<br><span class="grad">what you're using now.</span></h2>
+    <p class="section-lede">No marketing fluff. Some of these tools we love and use ourselves — they just don't solve the same problem.</p>
+
+    <div class="compare">
+      <table>
+        <thead>
+          <tr>
+            <th></th>
+            <th>Defender</th>
+            <th>Sysinternals</th>
+            <th>Splunk</th>
+            <th>GlassWire</th>
+            <th class="us">Log Sentinel</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td class="row-h">Behavioral monitoring</td>
+            <td class="meh">Partial</td>
+            <td class="no">Manual</td>
+            <td class="yes">Yes</td>
+            <td class="no">Network only</td>
+            <td class="yes us-cell">Full</td>
+          </tr>
+          <tr>
+            <td class="row-h">Plain-English findings</td>
+            <td class="no">No</td>
+            <td class="no">No</td>
+            <td class="no">No</td>
+            <td class="meh">Partial</td>
+            <td class="yes us-cell">Yes</td>
+          </tr>
+          <tr>
+            <td class="row-h">MITRE ATT&amp;CK mapping</td>
+            <td class="no">No</td>
+            <td class="no">No</td>
+            <td class="yes">Yes</td>
+            <td class="no">No</td>
+            <td class="yes us-cell">Yes</td>
+          </tr>
+          <tr>
+            <td class="row-h">One-click fixes</td>
+            <td class="meh">For known</td>
+            <td class="no">No</td>
+            <td class="no">No</td>
+            <td class="no">No</td>
+            <td class="yes us-cell">Yes</td>
+          </tr>
+          <tr>
+            <td class="row-h">Ransomware honeypots</td>
+            <td class="no">No</td>
+            <td class="no">No</td>
+            <td class="no">No</td>
+            <td class="no">No</td>
+            <td class="yes us-cell">Yes</td>
+          </tr>
+          <tr>
+            <td class="row-h">Setup time</td>
+            <td class="yes">Pre-installed</td>
+            <td class="meh">Per tool</td>
+            <td class="no">Days</td>
+            <td class="yes">Minutes</td>
+            <td class="yes us-cell">90 seconds</td>
+          </tr>
+          <tr>
+            <td class="row-h">Price</td>
+            <td class="yes">Free</td>
+            <td class="yes">Free</td>
+            <td class="no">$50K+/yr</td>
+            <td class="meh">$39/yr</td>
+            <td class="yes us-cell">Free / $79</td>
+          </tr>
+          <tr>
+            <td class="row-h">Phones home</td>
+            <td class="meh">Yes</td>
+            <td class="no">No</td>
+            <td class="yes">By design</td>
+            <td class="meh">Yes</td>
+            <td class="yes us-cell">Never</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+    <p style="margin-top:24px; color: var(--fg-3); font-size: 0.86em;">Source: actually using all of them. Updated when the products are.</p>
+  </div>
+</section>
+
+<!-- ═════════════ FOUNDER ═════════════ -->
+<section>
+  <div class="wrap">
+    <span class="section-label">Why I built this</span>
+    <h2>I got tired of <span class="grad">"your PC is fine"</span> stickers.</h2>
+
+    <div class="founder-card">
+      <div class="quote-mark">"</div>
+      <p>A friend called me last year because her laptop "felt off." Defender said clean. Task Manager looked normal. I spent 90 minutes running 6 different Sysinternals tools, parsing event logs by hand, googling registry keys, and finally found three things: a scheduled task pointing at a binary in <code>%TEMP%</code>, an autorun calling <code>powershell -enc</code>, and a connection to a TOR exit node.</p>
+      <p>Three things any decent SOC tool catches in 10 seconds. Three things <em>nothing</em> on her laptop was set up to catch.</p>
+      <p>I built Log Sentinel so the next time someone asks me, I just hand them an <code>.exe</code>.</p>
+      <div class="founder-sig">
+        <div class="founder-avatar">LS</div>
+        <div class="who">
+          <strong>The author</strong>
+          <div class="role">Maker · 2026 · she now scans every Sunday, score 91</div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ═════════════ HONEST LIMITS ═════════════ -->
+<section>
+  <div class="wrap">
+    <span class="section-label">Honest limitations</span>
+    <h2>What this <span style="color: var(--red)">isn't.</span></h2>
+    <p class="section-lede">Most landing pages skip this section. We think it's the most useful part.</p>
+
+    <div class="limits">
+      <ul>
+        <li><strong>Not a replacement for antivirus.</strong> Defender catches signature-known malware faster than we do. Run both.</li>
+        <li><strong>Not an EDR.</strong> No kernel driver, no real-time blocking, no quarantine of running threats. We surface; we don't intercept.</li>
+        <li><strong>Not a SIEM.</strong> We run on one PC and analyze that PC. We don't ingest from servers, cloud, or endpoints across a fleet.</li>
+        <li><strong>Not a vulnerability scanner.</strong> We don't enumerate CVEs against installed software versions. Use OpenVAS or Nessus for that.</li>
+        <li><strong>Not for Mac or Linux.</strong> Yet. Windows-only because that's where the malware and the buyers are.</li>
+        <li><strong>Not magic.</strong> If an attacker with admin clears the audit log before our scan, we won't see what they did. We'll see the log was cleared — which is its own Critical alert.</li>
+      </ul>
+    </div>
+  </div>
+</section>
+
+<!-- ═════════════ PRICING ═════════════ -->
+<section id="pricing">
+  <div class="wrap">
+    <span class="section-label">Pricing</span>
+    <h2>Buy it once. Own it.<br><span class="grad">No auto-renewal.</span></h2>
+    <p class="section-lede">We hate subscription traps as much as you do. Pay once or pay yearly — your call. Free tier is genuinely useful, not a 14-day teaser.</p>
+
+    <div class="pricing">
+
+      <div class="price">
+        <h3>Free</h3>
+        <p class="desc">For everyone. Forever.</p>
+        <div class="amount">$0</div>
+        <p class="note">no card · no signup · no expiration</p>
+        <ul>
+          <li>Full Health Check + 50 detections</li>
+          <li>Manual scans on a single machine</li>
+          <li>HTML reports (watermarked)</li>
+          <li>IP / port / website blocker</li>
+          <li>Panic button</li>
+          <li>Read-only Live Feed</li>
+        </ul>
+        <a href="#download" class="btn btn-ghost">Download free</a>
+      </div>
+
+      <div class="price feat">
+        <h3>Pro</h3>
+        <p class="desc">Unlock everything. One time.</p>
+        <div class="amount">$79</div>
+        <p class="note">one-time per machine · 1 year of updates</p>
+        <ul>
+          <li>Everything in Free</li>
+          <li>Live Mode + real-time toasts</li>
+          <li>Scheduled scans + email alerts</li>
+          <li>Honeypot tripwires</li>
+          <li>File Integrity Monitor</li>
+          <li>Custom detection rules</li>
+          <li>White-label PDF reports</li>
+          <li>Priority email support</li>
+        </ul>
+        <a href="#download" class="btn btn-primary">Buy Pro — $79</a>
+      </div>
+
+      <div class="price">
+        <h3>Consultant</h3>
+        <p class="desc">For IR / IT consultants.</p>
+        <div class="amount">$499<span class="small">/yr</span></div>
+        <p class="note">unlimited machines you service</p>
+        <ul>
+          <li>Everything in Pro</li>
+          <li>Run on any client machine</li>
+          <li>Branded PDF reports (your logo)</li>
+          <li>Early access to new features</li>
+          <li>Optional NDA on request</li>
+          <li>Direct line to the developer</li>
+        </ul>
+        <a href="mailto:hello@logsentinel.example?subject=Consultant" class="btn btn-ghost">Contact us</a>
+      </div>
+
+    </div>
+
+    <p style="text-align:center; color: var(--fg-3); margin-top: 32px; font-size: 0.9em;">
+      30-day refund, no questions asked. After your year of updates, $29/yr to keep getting new detections — or use forever.
+    </p>
+  </div>
+</section>
+
+<!-- ═════════════ FAQ ═════════════ -->
+<section>
+  <div class="wrap">
+    <span class="section-label">Questions</span>
+    <h2>What people <span class="grad">actually ask.</span></h2>
+
+    <div style="max-width: 820px; margin-top: 50px;">
+
+      <details>
+        <summary>Will this replace my antivirus?</summary>
+        <p>No, and please don't try. Antivirus catches known-bad signatures fast; we watch behavior across all Windows telemetry sources. Different problems, different solutions. We even monitor whether Defender is running and warn you if it gets disabled.</p>
+      </details>
+
+      <details>
+        <summary>Does it phone home?</summary>
+        <p>No. Zero outbound packets unless you explicitly configure something (e.g., your own SMTP server for email alerts to your own address). Run Wireshark while it's open and verify yourself. Our network calls would all be visible. There aren't any.</p>
+      </details>
+
+      <details>
+        <summary>Why one-time pricing? Everyone else does subscriptions.</summary>
+        <p>Subscription fatigue is real, and our maintenance cost doesn't scale per scan. Pay once, you own the version you bought, get a year of updates, and use it forever. No "trial expired" lockouts. No "we changed the licence in v2." If we go out of business, your <code>.exe</code> still works.</p>
+      </details>
+
+      <details>
+        <summary>I'm not technical. Will I get overwhelmed?</summary>
+        <p>The Health Check tab is built for non-technical users. One score. Cards in plain English. "Fix it" buttons. The other 13 tabs exist when you want to dig — but you don't have to. We deliberately put the simple view first.</p>
+      </details>
+
+      <details>
+        <summary>What if I block something I shouldn't have?</summary>
+        <p>Everything is reversible. Firewall rules are tagged <code>LogSentinel_*</code>. Hosts-file edits are commented <code># LogSentinel|...</code>. Snoozed findings, custom rules, scan history — all in <code>~/.log_sentinel/</code> as plain JSON. Audit and undo any change at any time.</p>
+      </details>
+
+      <details>
+        <summary>Does it work without Administrator rights?</summary>
+        <p>Most of it does. Processes, network, services, scheduled tasks, autoruns, USB history, scans, Live Mode, GeoIP — all work as a normal user. Some features (Security Event Log, firewall changes, hosts-file edits, panic-button isolation) need admin. We tell you clearly when something needs it.</p>
+      </details>
+
+      <details>
+        <summary>Will antivirus flag the .exe?</summary>
+        <p>Possibly, if it's not yet code-signed. PyInstaller binaries are sometimes flagged for being PyInstaller binaries — heuristic false positives. Once we're signed by a CA-issued cert, this stops. The source is open if you want to build it yourself.</p>
+      </details>
+
+      <details>
+        <summary>Where does my data live?</summary>
+        <p>On your computer, in <code>~/.log_sentinel/</code>. Your scan history, custom rules, preferences, snooze list, FIM baseline, honeypot list, email config — all there. Delete that folder and Log Sentinel forgets everything.</p>
+      </details>
+
+    </div>
+  </div>
+</section>
+
+<!-- ═════════════ FINAL CTA ═════════════ -->
+<section id="download">
+  <div class="wrap">
+    <div class="cta-card">
+      <h2>90 seconds to know.</h2>
+      <p>Download the .exe. Double-click. Read the score. Click Fix where needed. That's the whole product.</p>
+      <div class="actions">
+        <a href="#" class="btn btn-primary">⬇  LogSentinel.exe<span class="small">32 MB</span></a>
+        <a href="https://github.com/yourname/log-sentinel" class="btn btn-ghost">⭐  Source on GitHub</a>
+      </div>
+      <p class="small">
+        SHA-256: <code style="background: var(--bg-2); padding: 3px 8px; border-radius: 6px; color: var(--teal);">—</code> · Code-signed · Windows 10 / 11
+      </p>
+    </div>
+  </div>
+</section>
+
+<!-- ═════════════ FOOTER ═════════════ -->
+<footer>
+  <div class="inner">
+    <div>© 2026 Log Sentinel · Built with care, sold without bullshit.</div>
+    <div>
+      <a href="mailto:hello@logsentinel.example">hello@logsentinel.example</a> ·
+      <a href="https://github.com/yourname/log-sentinel">GitHub</a>
+    </div>
+  </div>
+</footer>
+
+</body>
+</html>

@@ -1,0 +1,32 @@
+Log Sentinel Source-Available License
+Version 1.0
+
+Copyright (c) 2026 Log Sentinel contributors.
+
+Permission is granted to read, audit, run, and modify this source code for
+personal, educational, and internal evaluation use.
+
+You may not:
+
+- Sell, sublicense, rent, host, or commercially redistribute this software or a
+  modified version of it without written permission.
+- Remove or misrepresent attribution, copyright notices, licensing notices, or
+  safety warnings.
+- Package this project as a competing commercial security product without a
+  separate commercial agreement.
+- Use the project name, logo, or branding in a way that implies endorsement.
+
+You may:
+
+- Study the code and learn from it.
+- Run it on machines you personally own or administer for non-commercial use.
+- Submit fixes or improvements upstream.
+- Build private internal test copies while evaluating the software.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+FITNESS FOR A PARTICULAR PURPOSE, AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES, OR OTHER
+LIABILITY ARISING FROM USE OF THE SOFTWARE.
+
+For commercial licensing, contact the project owner.
