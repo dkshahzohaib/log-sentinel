@@ -333,6 +333,9 @@ class LogSentinelApp(tk.Tk):
         self._popout_inner: tk.Frame | None = None
         self._popout_filter_lbl: tk.Label | None = None
         self._hero_collapsed: bool = False
+        self._health_history_signature: tuple | None = None
+        self._health_table_signature: tuple | None = None
+        self._health_filter_after = None
 
         # Demo mode flag
         self._demo_mode: bool = False
@@ -3420,10 +3423,17 @@ class LogSentinelApp(tk.Tk):
                                       self._on_health_action_select)
         self.health_actions_tree.bind("<Double-1>",
                                       lambda _e: self._health_details_selected())
+        self.health_actions_tree.bind("<Return>",
+                                      lambda _e: self._health_details_selected())
+        f.bind_all("<Control-l>", lambda _e: self._set_card_filter(reset=True))
+        f.bind_all("<Control-s>", lambda _e: self.refresh())
 
-        tk.Label(right, text="Action detail", bg=THEME["bg_card"],
-                 fg=THEME["fg"], font=("Segoe UI", 13, "bold")
-                 ).pack(anchor="w")
+        self.health_detail_title = tk.Label(
+            right, text="Action detail", bg=THEME["bg_card"],
+            fg=THEME["fg"], font=("Segoe UI", 13, "bold"),
+            anchor="w", justify="left",
+        )
+        self.health_detail_title.pack(anchor="w", fill="x")
         self.health_detail_text = tk.Text(
             right, height=16, wrap="word", bg=THEME["bg_card"],
             fg=THEME["fg"], insertbackground=THEME["fg"],
@@ -3476,6 +3486,14 @@ class LogSentinelApp(tk.Tk):
         ts = finding.timestamp.isoformat() if getattr(finding, "timestamp", None) else ""
         return f"{finding.rule}|{finding.title}|{ts}"
 
+    def _health_data_signature(self, findings):
+        return (
+            len(self.events),
+            len(self.processes),
+            len(self.connections),
+            tuple(self._health_finding_key(f) for f in findings),
+        )
+
     def _schedule_render_action_cards(self):
         after_id = getattr(self, "_health_filter_after", None)
         if after_id:
@@ -3491,9 +3509,15 @@ class LogSentinelApp(tk.Tk):
         self.health_detail_text.config(state="normal")
         self.health_detail_text.delete("1.0", "end")
         if not finding:
+            if hasattr(self, "health_detail_title"):
+                self.health_detail_title.config(text="Action detail")
             text = "Select a finding to see what happened and what to do next."
         else:
             pe = explain(finding.rule)
+            if hasattr(self, "health_detail_title"):
+                self.health_detail_title.config(
+                    text=f"{finding.severity} - {pe.user_category}"
+                )
             text = (
                 f"{finding.title}\n\n"
                 f"Severity : {finding.severity}\n"
@@ -3579,13 +3603,16 @@ class LogSentinelApp(tk.Tk):
             )
         )
 
-        try:
-            scan_history.save_scan(
-                health, active,
-                len(self.events), len(self.processes), len(self.connections),
-            )
-        except Exception:
-            pass
+        history_sig = (health.score, health.grade, self._health_data_signature(active))
+        if history_sig != self._health_history_signature:
+            try:
+                scan_history.save_scan(
+                    health, active,
+                    len(self.events), len(self.processes), len(self.connections),
+                )
+                self._health_history_signature = history_sig
+            except Exception:
+                pass
         self._render_action_cards()
         try:
             self._render_trends_chart()
@@ -3624,6 +3651,26 @@ class LogSentinelApp(tk.Tk):
             return (pinned, SEVERITY_ORDER.get(finding.severity, 0), ts)
 
         visible = [f for f in sorted(active, key=sort_key, reverse=True) if keep(f)]
+        table_sig = (
+            sev_f,
+            cat_f,
+            search,
+            tuple(self._health_finding_key(f) for f in visible),
+        )
+        status = (
+            f"{len(visible)} of {len(active)} active issues"
+            if (sev_f != "All" or cat_f != "All" or search)
+            else f"{len(active)} active issue{'s' if len(active) != 1 else ''}"
+        )
+        if hidden_low:
+            status += f" ({hidden_low} hidden by settings)"
+        self.health_filter_lbl.config(text=status)
+        if table_sig == self._health_table_signature:
+            finding = self._selected_health_finding()
+            if finding:
+                self._write_health_detail(finding)
+            return
+        self._health_table_signature = table_sig
         self._health_visible_findings = visible
         self.health_actions_tree.delete(*self.health_actions_tree.get_children())
         selected_item = None
@@ -3636,14 +3683,6 @@ class LogSentinelApp(tk.Tk):
             self.health_actions_tree.item(item, tags=(str(idx), f"sev-{finding.severity}"))
             if selected_key and self._health_finding_key(finding) == selected_key:
                 selected_item = item
-        status = (
-            f"{len(visible)} of {len(active)} active issues"
-            if (sev_f != "All" or cat_f != "All" or search)
-            else f"{len(active)} active issue{'s' if len(active) != 1 else ''}"
-        )
-        if hidden_low:
-            status += f" ({hidden_low} hidden by settings)"
-        self.health_filter_lbl.config(text=status)
         if visible:
             item = selected_item or self.health_actions_tree.get_children()[0]
             self.health_actions_tree.selection_set(item)
