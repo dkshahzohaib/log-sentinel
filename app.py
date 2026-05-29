@@ -7004,6 +7004,32 @@ class LogSentinelApp(tk.Tk):
             self.system_summary_text.insert("1.0", "\n".join(lines))
             self.system_summary_text.config(state="disabled")
 
+    def _dashboard_live(self):
+        now = datetime.now()
+        if (self._dashboard_live_snapshot is not None
+                and self._dashboard_live_at is not None
+                and (now - self._dashboard_live_at).total_seconds() < 5):
+            return self._dashboard_live_snapshot
+
+        mem = sysmon.get_memory()
+        disks = sysmon.get_disks()
+        battery = sysmon.get_battery()
+        primary_disk = next((d for d in disks if d.drive.upper().startswith("C:")),
+                            disks[0] if disks else None)
+        try:
+            local_ip = socket.gethostbyname(socket.gethostname())
+        except OSError:
+            local_ip = "Not detected"
+        self._dashboard_live_snapshot = {
+            "memory": mem,
+            "disks": disks,
+            "primary_disk": primary_disk,
+            "battery": battery,
+            "local_ip": local_ip,
+        }
+        self._dashboard_live_at = now
+        return self._dashboard_live_snapshot
+
     def _render_dashboard(self):
         # Update severity cards
         counts = {s: 0 for s in SEVERITY_FG}
@@ -7048,7 +7074,15 @@ class LogSentinelApp(tk.Tk):
                      text="✓  No critical or high findings.",
                      bg=THEME["bg"], fg="#4ecdc4",
                      font=("Segoe UI", 11)).pack(anchor="w", pady=10)
-        for f in top:
+        if top:
+            self.dashboard_top_findings_text.config(
+                text="\n".join(
+                    f"{f.severity:<8} {f.title[:52]}\n         {explain(f.rule).user_category}"
+                    for f in top
+                ),
+                fg=THEME["fg"],
+            )
+        for f in []:
             row = tk.Frame(self.top_findings_frame, bg=THEME["bg_card"])
             row.pack(fill="x", pady=2)
             color = SEVERITY_FG[f.severity]
@@ -7099,17 +7133,11 @@ class LogSentinelApp(tk.Tk):
         f = ttk.Frame(self.notebook, style="TFrame")
         self.notebook.add(f, text="  Dashboard  ")
         self.dashboard_widgets = {}
+        self._dashboard_live_snapshot = None
+        self._dashboard_live_at: datetime | None = None
 
-        canvas = tk.Canvas(f, bg=THEME["bg"], highlightthickness=0)
-        sb = ttk.Scrollbar(f, orient="vertical", command=canvas.yview)
-        canvas.configure(yscrollcommand=sb.set)
-        sb.pack(side="right", fill="y")
-        canvas.pack(side="left", fill="both", expand=True)
-
-        root = tk.Frame(canvas, bg=THEME["bg"], padx=18, pady=16)
-        win_id = canvas.create_window((0, 0), window=root, anchor="nw")
-        root.bind("<Configure>", lambda _e: canvas.configure(scrollregion=canvas.bbox("all")))
-        canvas.bind("<Configure>", lambda e: canvas.itemconfig(win_id, width=e.width))
+        root = tk.Frame(f, bg=THEME["bg"], padx=18, pady=16)
+        root.pack(fill="both", expand=True)
 
         header = tk.Frame(root, bg=THEME["bg"])
         header.pack(fill="x", pady=(0, 14))
@@ -7146,12 +7174,19 @@ class LogSentinelApp(tk.Tk):
         self.dashboard_severity_canvas.pack(fill="x")
 
         cat_card = self._dashboard_panel(main, "Top Finding Categories", row=0, col=1)
-        self.dashboard_cat_breakdown_frame = tk.Frame(cat_card, bg=THEME["bg_card"])
-        self.dashboard_cat_breakdown_frame.pack(fill="both", expand=True, pady=(8, 0))
+        self.dashboard_cat_text = tk.Label(
+            cat_card, text="", bg=THEME["bg_card"], fg=THEME["fg"],
+            justify="left", anchor="nw", font=("Consolas", 10),
+        )
+        self.dashboard_cat_text.pack(fill="both", expand=True, pady=(10, 0))
 
         findings_card = self._dashboard_panel(main, "Recent High Severity Findings", row=0, col=2)
-        self.dashboard_top_findings_frame = tk.Frame(findings_card, bg=THEME["bg_card"])
-        self.dashboard_top_findings_frame.pack(fill="both", expand=True, pady=(8, 0))
+        self.dashboard_top_findings_text = tk.Label(
+            findings_card, text="", bg=THEME["bg_card"], fg=THEME["fg"],
+            justify="left", anchor="nw", font=("Segoe UI", 9),
+            wraplength=360,
+        )
+        self.dashboard_top_findings_text.pack(fill="both", expand=True, pady=(10, 0))
         ttk.Button(findings_card, text="View All Findings",
                    command=lambda: self.notebook.select(5)).pack(anchor="w", pady=(8, 0))
 
@@ -7181,14 +7216,20 @@ class LogSentinelApp(tk.Tk):
                    command=self.open_reports_window).pack(fill="x", pady=2)
 
         timeline_card = self._dashboard_panel(main, "Timeline Activity", row=1, col=0)
-        self.dashboard_timeline_frame = tk.Frame(timeline_card, bg=THEME["bg_card"])
-        self.dashboard_timeline_frame.pack(fill="both", expand=True, pady=(8, 0))
+        self.dashboard_timeline_text = tk.Label(
+            timeline_card, text="", bg=THEME["bg_card"], fg=THEME["fg"],
+            justify="left", anchor="nw", font=("Consolas", 9),
+        )
+        self.dashboard_timeline_text.pack(fill="both", expand=True, pady=(10, 0))
         ttk.Button(timeline_card, text="View Full Timeline",
                    command=lambda: self.notebook.select(2)).pack(anchor="w", pady=(8, 0))
 
         health_card = self._dashboard_panel(main, "System Health Indicators", row=1, col=1)
-        self.dashboard_health_frame = tk.Frame(health_card, bg=THEME["bg_card"])
-        self.dashboard_health_frame.pack(fill="both", expand=True, pady=(8, 0))
+        self.dashboard_health_text = tk.Label(
+            health_card, text="", bg=THEME["bg_card"], fg=THEME["fg"],
+            justify="left", anchor="nw", font=("Consolas", 10),
+        )
+        self.dashboard_health_text.pack(fill="both", expand=True, pady=(10, 0))
         ttk.Button(health_card, text="View System Info",
                    command=lambda: self.notebook.select(13)).pack(anchor="w", pady=(8, 0))
 
@@ -7284,38 +7325,39 @@ class LogSentinelApp(tk.Tk):
                               font=("Segoe UI", 9))
                 y += 34
 
-        for w in self.dashboard_cat_breakdown_frame.winfo_children():
-            w.destroy()
         cat_counts: dict[str, int] = {}
         for f in active:
             cat = explain(f.rule).user_category
             cat_counts[cat] = cat_counts.get(cat, 0) + 1
         items = sorted(cat_counts.items(), key=lambda x: x[1], reverse=True)[:6]
-        max_count = max((n for _, n in items), default=1)
-        if not items:
-            tk.Label(self.dashboard_cat_breakdown_frame, text="No findings yet.",
-                     bg=THEME["bg_card"], fg=THEME["fg_dim"],
-                     font=("Segoe UI", 10)).pack(anchor="w", pady=8)
-        for cat, n in items:
-            row = tk.Frame(self.dashboard_cat_breakdown_frame, bg=THEME["bg_card"])
-            row.pack(fill="x", pady=5)
-            tk.Label(row, text=cat, bg=THEME["bg_card"], fg=THEME["fg"],
-                     width=16, anchor="w", font=("Segoe UI", 9)).pack(side="left")
-            bar_bg = tk.Frame(row, bg=THEME["bg_panel"], height=5)
-            bar_bg.pack(side="left", fill="x", expand=True, padx=8)
-            bar = tk.Frame(bar_bg, bg=USER_CATEGORY_COLORS.get(cat, THEME["accent"]), height=5)
-            bar.place(relx=0, rely=0, relwidth=max(0.08, n / max_count), relheight=1)
-            tk.Label(row, text=str(n), bg=THEME["bg_card"], fg=THEME["fg"],
-                     width=3, anchor="e", font=("Segoe UI", 9)).pack(side="left")
+        if items:
+            max_count = max((n for _, n in items), default=1)
+            lines = []
+            for cat, n in items:
+                blocks = max(1, int((n / max_count) * 14))
+                lines.append(f"{cat:<18} {'#' * blocks:<14} {n}")
+            self.dashboard_cat_text.config(text="\n".join(lines), fg=THEME["fg"])
+        else:
+            self.dashboard_cat_text.config(
+                text="No findings yet.\nRun Scan Now to build the live breakdown.",
+                fg=THEME["fg_dim"],
+            )
 
-        for w in self.dashboard_top_findings_frame.winfo_children():
-            w.destroy()
         top = [f for f in active if f.severity in ("Critical", "High", "Medium")][:5]
         if not top:
-            tk.Label(self.dashboard_top_findings_frame, text="No high severity findings.",
-                     bg=THEME["bg_card"], fg="#4ecdc4",
-                     font=("Segoe UI", 10)).pack(anchor="w", pady=8)
-        for f in top:
+            self.dashboard_top_findings_text.config(
+                text="No high severity findings.\nScan when ready to check Windows logs.",
+                fg="#4ecdc4",
+            )
+        else:
+            self.dashboard_top_findings_text.config(
+                text="\n".join(
+                    f"{f.severity:<8} {f.title[:52]}\n         {explain(f.rule).user_category}"
+                    for f in top
+                ),
+                fg=THEME["fg"],
+            )
+        for f in []:
             row = tk.Frame(self.dashboard_top_findings_frame, bg=THEME["bg_card"])
             row.pack(fill="x", pady=5)
             tk.Label(row, text="●", bg=THEME["bg_card"], fg=SEVERITY_FG[f.severity],
@@ -7346,11 +7388,10 @@ class LogSentinelApp(tk.Tk):
                 f"User      : {si.user or '-'}",
             ]))
         else:
-            mem = sysmon.get_memory()
-            disks = sysmon.get_disks()
-            primary_disk = next((d for d in disks if d.drive.upper().startswith("C:")),
-                                disks[0] if disks else None)
-            battery = sysmon.get_battery()
+            live = self._dashboard_live()
+            mem = live["memory"]
+            primary_disk = live["primary_disk"]
+            battery = live["battery"]
             battery_text = (
                 f"{battery.percent}% {'plugged in' if battery.plugged_in else 'on battery'}"
                 if battery.has_battery else "Desktop / no battery"
@@ -7387,21 +7428,16 @@ class LogSentinelApp(tk.Tk):
                     f"External   : {len(external)} connection(s)",
                 ]))
             else:
-                try:
-                    local_ip = socket.gethostbyname(socket.gethostname())
-                except OSError:
-                    local_ip = "Not detected"
+                live = self._dashboard_live()
                 self.dashboard_network_label.config(text="\n".join([
-                    f"Local IP   : {local_ip}",
+                    f"Local IP   : {live['local_ip']}",
                     "External   : Waiting for scan",
                     "GeoIP      : Available after network collection",
                     "Privacy    : Camera/browser checks show in Findings",
                 ]))
 
-        for w in self.dashboard_timeline_frame.winfo_children():
-            w.destroy()
         recent_events = sorted(self.events, key=lambda e: e.timestamp, reverse=True)[:5]
-        for e in recent_events:
+        for e in []:
             row = tk.Frame(self.dashboard_timeline_frame, bg=THEME["bg_card"])
             row.pack(fill="x", pady=4)
             tk.Label(row, text=e.timestamp.strftime("%H:%M"), bg=THEME["bg_card"],
@@ -7411,17 +7447,23 @@ class LogSentinelApp(tk.Tk):
                      bg=THEME["bg_card"], fg=THEME["fg"],
                      anchor="w", font=("Segoe UI", 9)).pack(side="left", fill="x", expand=True)
         if not recent_events:
-            tk.Label(self.dashboard_timeline_frame, text="No logs collected yet.",
-                     bg=THEME["bg_card"], fg=THEME["fg_dim"],
-                     font=("Segoe UI", 10)).pack(anchor="w", pady=8)
+            self.dashboard_timeline_text.config(
+                text="No logs collected yet.\nClick Scan Now to load the event timeline.",
+                fg=THEME["fg_dim"],
+            )
+        else:
+            self.dashboard_timeline_text.config(
+                text="\n".join(
+                    f"{e.timestamp.strftime('%H:%M')}  {EVENT_LABELS.get(e.event_id, 'Windows event')} ({e.event_id})"
+                    for e in recent_events
+                ),
+                fg=THEME["fg"],
+            )
 
-        for w in self.dashboard_health_frame.winfo_children():
-            w.destroy()
-        mem = sysmon.get_memory()
-        disks = sysmon.get_disks()
-        primary_disk = next((d for d in disks if d.drive.upper().startswith("C:")),
-                            disks[0] if disks else None)
-        battery = sysmon.get_battery()
+        live = self._dashboard_live()
+        mem = live["memory"]
+        primary_disk = live["primary_disk"]
+        battery = live["battery"]
         memory_state = f"{mem.used_pct:.0f}% used" if mem.total_gb else "Checking"
         memory_color = "#ff4757" if mem.used_pct >= 90 else "#ff9f1a" if mem.used_pct >= 75 else "#5cc96b"
         if primary_disk:
@@ -7441,7 +7483,10 @@ class LogSentinelApp(tk.Tk):
             ("Windows Updates", "Scan needed", "#3aa0ff"),
             ("Antivirus Status", "Scan needed", "#3aa0ff"),
         ]
-        for label, state, color in indicators:
+        self.dashboard_health_text.config(
+            text="\n".join(f"{label:<18} {state}" for label, state, _color in indicators)
+        )
+        for label, state, color in []:
             row = tk.Frame(self.dashboard_health_frame, bg=THEME["bg_card"])
             row.pack(fill="x", pady=5)
             tk.Label(row, text=label, bg=THEME["bg_card"], fg=THEME["fg"],
