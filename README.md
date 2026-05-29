@@ -1,242 +1,228 @@
-# 🛡 Log Sentinel
+# Log Sentinel
 
-> **Know what your computer is really doing.**
-> A one-click Windows security tool with live monitoring, plain-English findings, and one-click blocking. Free for personal use. No cloud. No telemetry. ~30 MB.
+Windows endpoint and log-analysis workstation for local security review, SOC practice, incident triage, and system health checks.
 
-[Download for Windows](#-quick-start) · [See it in action](#-what-it-looks-like) · [Pricing](#-pricing) · [Feature list](#-features)
+Log Sentinel collects Windows logs and host telemetry, runs detection rules, explains findings in plain English, maps security detections to MITRE ATT&CK where relevant, and exports readable reports for review or handoff.
 
----
+![Log Sentinel health check](reports/health_v2_screenshot.png)
 
-## What it does in one paragraph
+## Project Purpose
 
-Log Sentinel is a desktop app that pulls together everything Windows knows about itself — Event Log, processes, network connections, services, scheduled tasks, autoruns, USB history, installed software, hosts file, registry — runs 50+ detection rules across all of it, maps every finding to **MITRE ATT&CK**, and shows you the result as one easy-to-read **Health Score** with plain-English fixes.
+This project is built as a practical blue-team portfolio tool. It demonstrates how a junior SOC analyst or security support technician can turn raw Windows data into actionable findings without manually jumping between Event Viewer, Task Manager, netstat, services, scheduled tasks, firewall rules, and system information screens.
 
-Then it gets out of your way.
+It is not an antivirus replacement. It is a local investigation and reporting tool that helps answer:
 
----
+- What happened on this Windows machine?
+- Are there failed logins, suspicious services, risky ports, or persistence changes?
+- Which findings matter first?
+- What action should a non-technical user take next?
+- Can this system be documented for a customer, buyer, or support case?
 
-## Why this, not antivirus
+## Screenshots
 
-| Antivirus | Log Sentinel |
+### Health Check
+
+![Health Check](reports/health_v2_screenshot.png)
+
+### Windows Logs And Timeline
+
+![Timeline](reports/timeline_v2.png)
+
+### Network And GeoIP
+
+![Network GeoIP](reports/network_geoip.png)
+
+### Process Tree
+
+![Process Tree](reports/process_tree.png)
+
+### Generated Report
+
+The app can export HTML, JSON, and PDF reports.
+
+- [Sample HTML report](reports/demo_report.html)
+- [Sample PDF report](reports/demo_report.pdf)
+
+## Main Features
+
+- Windows Event Log collection from Security, System, and Application channels
+- Dedicated Logs tab with filters for failed passwords, successful logins, account changes, privilege events, system start/stop, and audit tampering
+- Health score with severity-based recommended actions
+- Findings grouped by Security, Privacy, Performance, and Stability
+- MITRE ATT&CK mapping for supported detections
+- Process inventory and parent-child process tree
+- Network connection inventory with external IP and offline GeoIP context
+- Services, scheduled tasks, autoruns, DNS cache, USB history, installed software, and recent files
+- Baseline comparison for new services, autoruns, tasks, and listening ports
+- File scanner for suspicious lab artifacts and EICAR-style test markers
+- Windows Defender, Task Manager, Settings, firewall, and hosts-file remediation helpers
+- Panic button for local network isolation
+- System Info view for buyer checks: CPU, RAM, disk space, partitions, GPU, battery, BIOS, model, and serial
+- Report export to HTML, JSON, and PDF
+- Searchable help center
+- 30-day local trial and monthly device-bound licence keys
+
+## Detection Coverage
+
+| Area | Examples |
 |---|---|
-| Catches known **signatures** | Watches actual **behavior** |
-| Quietly fails when malware is new | Shows you every new process + connection in real time |
-| One opaque "you're protected" sticker | A 0–100 Health Score with the WHY |
-| You hope it caught the thing | You can see for yourself |
-| Subscription forever | One-time purchase |
+| Authentication | Failed logins, brute-force patterns, account lockouts, off-hours logons |
+| Privilege activity | Admin logons, privilege escalation events, account/group changes |
+| Persistence | New services, scheduled tasks, autoruns, startup impact |
+| Process behavior | Suspicious names, risky locations, known tool indicators, process impersonation |
+| Network | Suspicious listening ports, uncommon ports, external connections, GeoIP context |
+| PowerShell | Encoded commands and suspicious script block activity |
+| Defense evasion | Audit log clearing, firewall changes, baseline drift |
+| Ransomware practice | Honeypot tripwires and file integrity checks |
+| Privacy | Camera/microphone access checks and browser extension review |
+| System health | RAM pressure, startup bloat, crash/shutdown events, hardware summary |
 
-**Use both.** They don't overlap. Antivirus stops what's known; Log Sentinel surfaces what isn't.
+## Quick Start
 
----
+### Requirements
 
-## 🎬 What it looks like
+- Windows 10 or Windows 11
+- Python 3.10 or newer
+- PowerShell or Command Prompt
 
-```
-┌─ HEALTH CHECK ───────────────────────────────────────────────────┐
-│                                                                    │
-│      ╭────────╮      YOUR PC HEALTH                                │
-│      │   56   │      Multiple problems found. Take action soon.    │
-│      │ Grade D│      ↓ 2 pts vs last scan  ·  7 new  ·  6 resolved │
-│      ╰────────╯                                                    │
-│                                                                    │
-│   🛡 Security 10   👁 Privacy 16   ⚡ Performance 11   🔧 Stability │
-│                                                                    │
-│   📋 RECOMMENDED ACTIONS                                          │
-│                                                                    │
-│   ┃━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┃   │
-│   ┃ [HIGH]  [Privacy]  T1219                              ⚙   ┃   │
-│   ┃ A remote-control program is running on your PC.            ┃   │
-│   ┃                                                            ┃   │
-│   ┃ WHY IT MATTERS              WHAT TO DO                     ┃   │
-│   ┃ TeamViewer/AnyDesk let       1. Did you install this?      ┃   │
-│   ┃ someone else control your    2. If no — uninstall it...    ┃   │
-│   ┃ computer. Common scam ...    3. Change your passwords...   ┃   │
-│   ┃                                                            ┃   │
-│   ┃ [Open Task Manager]  [Defender Quick Scan]   ✓ Mark fixed  ┃   │
-│   ┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛   │
-└────────────────────────────────────────────────────────────────────┘
-```
+Most features work without administrator rights. To read the Security event log and use firewall/hosts isolation features, run as Administrator.
 
-14 tabs, all populated automatically: Health Check · Trends · Timeline · Dashboard · Live Feed · Findings · Events · Network · Processes · Services · Persistence · Live Monitor · Firewall · System.
+### Run From Source
 
----
-
-## ⚡ Quick start
-
-### Trial and monthly keys
-
-Log Sentinel starts with a 30-day trial. After that, the app requires a fresh 30-day licence key. To issue a customer key:
-
-```bash
-py -3 tools/make_license_key.py customer@example.com --days 30 --device MACHINE_ID
-```
-
-The customer enters their email and key in the activation window. Ask them to send the Machine ID shown on that screen so the key works only on that PC. This early offline system is useful for controlled sales and demos; for a public release, move key generation and activation to a private server.
-
-### Easy: download the .exe
-
-1. Download `LogSentinel.exe` (~30 MB, single file)
-2. Right-click → **Run as administrator** (for full power)
-3. The app opens maximized. Wait 30 seconds for the first scan to finish.
-4. Read the Health Check tab. Click **✨ Quick Win** to auto-fix the safe stuff.
-
-### Run from source (developers)
-
-```bash
-git clone https://github.com/yourname/log-sentinel.git
+```powershell
+git clone https://github.com/dkshahzohaib/log-sentinel.git
 cd log-sentinel
-python app.py
+py -3 app.py
 ```
 
-Requires Python 3.10+. **Zero pip dependencies** — pure standard library.
+### Run As Administrator
 
-### Build the portable .exe yourself
+Open PowerShell as Administrator:
 
-```bash
+```powershell
+cd "C:\path\to\log-sentinel"
+py -3 app.py
+```
+
+Administrator mode is needed for Security log events such as failed password attempts:
+
+- `4625` - failed login / wrong password
+- `4771` - Kerberos pre-authentication failed
+- `4776` - credential validation failed
+
+### Run A Headless Scan
+
+```powershell
+py -3 app.py --scan
+```
+
+### Build Portable EXE
+
+```powershell
 BUILD.bat
 ```
 
-Drops `dist\LogSentinel.exe`. See [BUILD.md](BUILD.md) for code-signing + installer instructions.
+See [BUILD.md](BUILD.md) for build, signing, and release notes.
 
----
+## How To Test Detections Safely
 
-## ✨ Features
+This repository includes harmless test artifacts in `fake_malware_lab/` and a local port listener test.
 
-### The headline ones
+### Suspicious Port Test
 
-- **🏥 Health Check** — One score (0–100), color-coded categories (Security / Privacy / Performance / Stability), plain-English findings with one-click fixes
-- **⚡ Live Mode** — Real-time process + network monitoring with toast alerts the moment something Critical or High shows up
-- **🚨 Panic Button** — One click cuts every network adapter on the machine. The killer ransomware-response feature. Reversible.
-- **🔥 Firewall + Domain Blocker** — Block any IP, port, or website (Facebook, TikTok, your call) in two clicks. All reversible.
-- **🍯 Honeypot Tripwires** — Drop fake `passwords.txt` / `wallet_backup.txt` files. The moment ransomware reads or modifies them, you know.
-- **🔍 File Integrity Monitor** — Watch any file. We hash + compare on every scan. Flags any change.
-- **⏱ Attack Timeline** — Every event and finding plotted on one time axis. Find the moment things went wrong.
-- **📊 System Vitals** — Live CPU / RAM / Disk / Battery / Wi-Fi / Internet / Antivirus state, all updating in real time
-- **🌐 GeoIP Connections** — See which countries your PC is talking to with country flags
-- **🌳 Process Tree** — Parent → child relationships, suspicious processes flagged
-- **🛠 Custom Detection Rules** — Write your own rules in JSON, with a built-in GUI editor
-- **📈 Trends** — Every scan saved, health score charted over time
-- **⏰ Scheduled Scans** — Run silently via Windows Task Scheduler
-- **✉ Email Alerts** — SMTP-based, fires only on Critical/High findings
-- **🔐 Password Strength Checker** — Offline, with crack-time estimate
-
-### Detection coverage
-
-| Category | What we catch |
-|---|---|
-| **Authentication** | Brute-force logons, off-hours access, account lockouts, privilege escalation |
-| **Persistence** | New scheduled tasks, autoruns, services, especially from Temp folders |
-| **Process** | Known attacker tools (mimikatz, rubeus, cobaltstrike), process impersonation, suspicious paths |
-| **Network** | Suspicious listening ports (4444, 31337…), TOR connections, beaconing patterns |
-| **PowerShell** | Encoded commands, download cradles, IEX abuse |
-| **Defense evasion** | Audit log clearing, firewall changes, unsigned binaries |
-| **Ransomware** | Honeypot file modification, audit log clearing, shadow copy deletion patterns |
-| **Privacy** | Webcam/mic users, browser extensions, USB history |
-| **Performance** | Startup bloat, RAM hogs, suspicious miners |
-| **Stability** | Unexpected shutdowns, recently modified system files |
-
-Every finding tagged with its **MITRE ATT&CK** technique ID — clickable, links to attack.mitre.org.
-
----
-
-## 💰 Pricing
-
-| Tier | Price | For |
-|---|---|---|
-| **Free** | $0 | Single machine, manual scans, full Health Check, IP/website blocker, watermarked reports |
-| **Pro** | $79 one-time | Live mode, scheduled scans, email alerts, honeypots, FIM, custom rules, white-label reports |
-| **Consultant** | $499/year | Run on unlimited machines you service, branded PDF reports, priority support |
-
-No subscription trap. Pay once, own it. Updates for a year included.
-
-[See full feature comparison →](outreach/index.html)
-
----
-
-## 🔒 Privacy guarantees
-
-- **Zero telemetry.** Open Wireshark while it's running and verify yourself.
-- **Zero account required.** No signup, no email harvesting.
-- **Zero data leaves your PC** unless YOU configure it (e.g., your own SMTP for alerts).
-- **Source is open** so you can audit every claim above.
-
-Your scan history lives at `~/.log_sentinel/`. Delete that folder and Log Sentinel forgets everything.
-
----
-
-## 🛠 Architecture
-
-Pure Python, single-machine, single-file when bundled. Zero pip dependencies.
-
+```powershell
+TEST-THREAT-PORT-4444.bat
 ```
+
+Then run a scan. Log Sentinel should flag activity around port `4444`.
+
+### File Scanner Test
+
+Use the app's folder scan feature and select:
+
+```text
+fake_malware_lab
+```
+
+The included files are safe test samples, not real malware.
+
+## Licensing Demo
+
+The project includes a local 30-day trial and device-bound monthly key system for productization practice.
+
+Generate a 30-day key:
+
+```powershell
+py -3 tools\make_license_key.py customer@example.com --days 30 --device MACHINE_ID
+```
+
+The Machine ID is shown in the activation window. This is suitable for controlled demos and portfolio work. A production commercial release should move key creation and activation checks to a private server.
+
+## Repository Structure
+
+```text
 log-sentinel/
-├── app.py                  # Tkinter desktop GUI
-├── main.py                 # CLI version + report generation
-├── demo.py                 # Synthetic attack scenario
-├── BUILD.bat               # PyInstaller portable .exe builder
-├── LogSentinel.spec        # PyInstaller config
-├── LAUNCH-as-admin.bat     # UAC-elevated launcher
+├── app.py                    # Tkinter desktop application
+├── main.py                   # CLI/report entry point
+├── demo.py                   # Synthetic demo data
+├── BUILD.bat                 # Portable build script
 ├── src/
-│   ├── collector.py        # Windows Event Log via wevtutil
-│   ├── system_collector.py # Processes, network, services, autoruns, etc.
-│   ├── analyzer.py         # 11 event-based detection rules
-│   ├── system_analyzer.py  # 9 snapshot-based detection rules
-│   ├── custom_rules.py     # User-defined rule engine
-│   ├── live_monitor.py     # Real-time polling thread
-│   ├── threat_intel.py     # Built-in IOC database
-│   ├── mitre.py            # MITRE ATT&CK technique mapping
-│   ├── plain_english.py    # Human-readable explanations
-│   ├── health_score.py     # 0–100 score calculation
-│   ├── remediation.py      # One-click fix actions
-│   ├── firewall_manager.py # netsh wrapper for IP/port rules
-│   ├── hosts_manager.py    # hosts file editor for website blocking
-│   ├── fim.py              # File integrity monitor
-│   ├── honeypots.py        # Tripwire file engine
-│   ├── system_monitor.py   # Live CPU/RAM/disk/battery/Wi-Fi
-│   ├── panic.py            # Device isolation
-│   ├── geoip.py            # Offline IP→country lookup
-│   ├── email_alerts.py     # SMTP alerts
-│   ├── password_check.py   # Offline password strength
-│   ├── scheduler.py        # Windows Task Scheduler integration
-│   ├── scan_history.py     # Trend tracking
-│   ├── preferences.py      # Persistent user state
-│   ├── quick_win.py        # Batch safe-fix engine
-│   ├── reporter.py         # HTML/JSON/PDF reports
-│   ├── categorizer.py      # Event ID → category mapping
-│   └── everyday_scanner.py # Startup, mic/cam, recent files, etc.
-├── outreach/               # Landing page, email templates, demo script
-├── reports/                # Generated reports
-└── BUILD.md, USER_GUIDE.md
+│   ├── collector.py          # Windows Event Log collection
+│   ├── system_collector.py   # Processes, network, services, tasks, system info
+│   ├── analyzer.py           # Event-based detections
+│   ├── system_analyzer.py    # Host snapshot detections
+│   ├── detection_pipeline.py # Shared GUI/headless detection flow
+│   ├── baseline.py           # Baseline comparison
+│   ├── reporter.py           # HTML, JSON, PDF, help output
+│   ├── licensing.py          # Local trial and key handling
+│   └── ...
+├── tests/                    # Unit tests
+├── reports/                  # Screenshots and sample reports
+├── fake_malware_lab/         # Harmless test artifacts
+├── outreach/                 # Product-page/support material drafts
+└── tools/                    # Admin helper scripts
 ```
 
----
+## Test Suite
 
-## 📜 Licence
+```powershell
+py -3 -m unittest discover -s tests -v
+py -3 -m compileall -q app.py main.py demo.py src tests tools
+```
 
-Free for personal use. Commercial / multi-machine use requires a licence (see [Pricing](#-pricing) above).
+Current coverage includes:
 
-Source available — that's not the same as MIT or GPL. Read it, audit it, learn from it. Don't repackage and resell.
+- Event analyzer rules
+- System analyzer rules
+- Health scoring
+- Baseline detection
+- File scanner
+- Report generation
+- Licence key handling
+- Preference filtering
+- Validation helpers
 
----
+## Portfolio Notes
 
-## ❓ FAQ
+This project demonstrates:
 
-- **"Is this a replacement for antivirus?"** No. Use both.
-- **"Does it phone home?"** No. Verify with Wireshark.
-- **"Will it overwhelm me?"** The Health Check tab is designed for total beginners.
-- **"What if I block the wrong thing?"** Every change is reversible from the Active Rules tab.
-- **"Without admin?"** Most features work. Security log + firewall + hosts file + panic button need admin.
+- Windows log collection and parsing with `wevtutil`
+- Security event interpretation for common SOC workflows
+- Detection engineering using rule-based analytics
+- Host telemetry collection and enrichment
+- MITRE ATT&CK mapping
+- GUI design for non-technical users
+- Report generation for analyst handoff
+- Test-driven hardening of detection and reporting logic
+- Safe malware-lab style testing without real malware
 
-[Full FAQ on the landing page →](outreach/index.html)
+## Security Notes
 
----
+- Run as Administrator only when Security log, firewall, hosts file, or isolation features are required.
+- Do not treat generated findings as final proof of compromise. Review evidence and context.
+- The included suspicious files are harmless test samples.
+- Local-only licence enforcement is not tamper-proof. Production licensing should use online activation and server-side signing.
 
-## 🤝 Get in touch
+## License
 
-- 🐛 Bugs / feature requests: [GitHub Issues](https://github.com/yourname/log-sentinel/issues)
-- 💬 General: hello@logsentinel.example
-- 📦 Consultant licensing: licensing@logsentinel.example
-
----
-
-*Built with care, sold without bullshit.*
+See [LICENSE](LICENSE).
