@@ -2894,14 +2894,15 @@ class LogSentinelApp(tk.Tk):
         width = int(c.cget("width"))
         height = int(c.cget("height"))
         cx, cy = width // 2, height // 2
-        r = max(52, min(width, height) // 2 - 18)
+        r = max(44, min(width, height) // 2 - 16)
+        ring_width = max(10, min(width, height) // 12)
         # Background ring
-        c.create_oval(cx-r, cy-r, cx+r, cy+r, outline="#3d3d5c", width=14)
+        c.create_oval(cx-r, cy-r, cx+r, cy+r, outline="#3d3d5c", width=ring_width)
         # Progress arc
         if score > 0:
             extent = -(score / 100) * 360
             c.create_arc(cx-r, cy-r, cx+r, cy+r, start=90, extent=extent,
-                         outline=color, width=14, style="arc")
+                         outline=color, width=ring_width, style="arc")
         # Score number
         if hasattr(self, "score_number_lbl"):
             self.score_number_lbl.config(text=str(score), fg=color)
@@ -3267,11 +3268,11 @@ class LogSentinelApp(tk.Tk):
         self.score_number_lbl = tk.Label(score_card, text="0",
                                          bg=THEME["bg_card"], fg="#888",
                                          font=("Segoe UI", 26, "bold"))
-        self.score_number_lbl.place(x=0, y=52, width=182)
+        self.score_number_lbl.place(x=0, y=50, width=150)
         self.score_grade_lbl = tk.Label(score_card, text="-",
                                         bg=THEME["bg_card"], fg=THEME["fg"],
                                         font=("Segoe UI", 10, "bold"))
-        self.score_grade_lbl.place(x=0, y=92, width=182)
+        self.score_grade_lbl.place(x=0, y=88, width=150)
 
         verdict = tk.Frame(hero, bg=THEME["bg_card"], padx=20, pady=16,
                            highlightthickness=1,
